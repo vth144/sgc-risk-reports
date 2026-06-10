@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Báo Cáo Rủi Ro Thị Trường Hàng Ngày</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;600;700;800&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'IBM Plex Sans', sans-serif; background: #f5f5f3; color: #2d2d2d; }
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+  .header {
+    display: flex; align-items: center; gap: 16; padding: 0 20px;
+    height: 50px; min-height: 50px; border-bottom: 1px solid rgba(0,0,0,0.08);
+    background: #fff; flex-shrink: 0; gap: 16px;
+  }
+  .header-title { font-size: 16px; font-weight: 800; letter-spacing: 0.06em; color: #1a1a1a; flex-shrink: 0; }
+  .header-divider { width: 1px; height: 20px; background: rgba(0,0,0,0.1); flex-shrink: 0; }
+  .header-date { font-size: 13px; color: rgba(0,0,0,0.6); white-space: nowrap; }
+
+  .body { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+
+  /* LEFT */
+  .col-left { display: flex; flex-direction: column; }
+
+  /* RRI */
+  .rri-box { background: #888; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .rri-label { font-size: 15px; font-weight: 800; letter-spacing: 0.1em; color: rgba(255,255,255,0.95); margin-bottom: 6px; }
+  .rri-score { font-family: 'IBM Plex Mono', monospace; font-size: 44px; font-weight: 900; line-height: 1; color: #fff; }
+  .rri-denom { font-size: 16px; color: rgba(255,255,255,0.6); margin-left: 8px; }
+  .rri-pill { font-size: 15px; font-weight: 800; letter-spacing: 0.06em; color: #fff; border-radius: 5px; padding: 7px 18px; white-space: nowrap; background: rgba(255,255,255,0.2); }
+
+  .exec-header { padding: 9px 18px; border-bottom: 1px solid rgba(0,0,0,0.07); background: #1a3a6b; flex-shrink: 0; }
+  .exec-label { font-size: 15px; letter-spacing: 0.1em; color: #fff; font-weight: 800; margin-bottom: 5px; }
+  .exec-sub-main { font-size: 14px; font-weight: 700; color: #fff; display: block; margin-bottom: 3px; }
+  .exec-sub-note { font-size: 11px; font-weight: 400; color: rgba(255,255,255,0.6); display: block; }
+
+  /* SIGNAL ROW */
+  .signal-row {
+    padding: 15px 18px; cursor: default;
+    border-bottom: 2px solid rgba(0,0,0,0.15);
+    border-left: 3px solid transparent;
+    background: #fff; transition: background 0.15s;
+  }
+  .signal-row:hover { background: #fff; }
+  .signal-row.active { background: rgba(212,175,55,0.08); border-left-color: #d4af37 !important; }
+  .row-top { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; flex-wrap: wrap; }
+  .row-rank { font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 800; }
+  .row-cat { font-size: 12px; color: rgba(0,0,0,0.65); letter-spacing: 0.05em; font-weight: 600; }
+  .row-active-hint { margin-left: auto; font-size: 11px; color: #b8860b; }
+  .severity-pill { display: inline-block; font-size: 14px; font-weight: 800; letter-spacing: 0.06em; color: #fff; border-radius: 4px; padding: 4px 11px; margin-left: auto; }
+  .row-headline { font-size: 16px; font-weight: 700; line-height: 1.45; margin-bottom: 8px; color: #111; }
+  .row-headline.active { color: #000; }
+  .row-summary { font-size: 14px; color: rgba(0,0,0,0.78); line-height: 1.65; margin-bottom: 10px; }
+  .row-footer { display: flex; align-items: center; justify-content: space-between; }
+  .row-metric { font-size: 14px; font-weight: 700; }
+  .row-source { font-size: 12px; color: rgba(0,0,0,0.4); }
+  .row-source-link {
+    font-size: 11px; color: #0005CB; text-decoration: none;
+    border-bottom: 1px solid rgba(0,5,203,0.3);
+    transition: border-color 0.15s;
+  }
+  .row-source-link:hover { border-bottom-color: #0005CB; }
+  .deep-source { font-size: 11px; color: rgba(0,0,0,0.4); }
+  .deep-source-link {
+    font-size: 11px; color: #0005CB; text-decoration: none;
+    border-bottom: 1px solid rgba(0,5,203,0.3);
+    transition: border-color 0.15s;
+  }
+  .deep-source-link:hover { border-bottom-color: #0005CB; }
+
+  /* FOOTER */
+  .col-footer { margin-top: auto; padding: 10px 18px; border-top: 1px solid rgba(0,0,0,0.07); font-size: 10px; color: rgba(0,0,0,0.35); }
+  .col-footer strong { color: rgba(0,0,0,0.5); }
+
+  /* RIGHT */
+  .col-right { display: none; }
+  .right-header { padding: 9px 22px 8px; border-bottom: 1px solid rgba(0,0,0,0.07); background: #fff; flex-shrink: 0; font-size: 11px; font-weight: 700; color: rgba(0,0,0,0.45); letter-spacing: 0.05em; }
+  .right-empty { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; color: rgba(0,0,0,0.25); }
+
+  /* DEEP PANEL */
+  .deep-panel { flex: 1; display: flex; flex-direction: column; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .deep-id { padding: 16px 22px 14px; border-bottom: 1px solid rgba(0,0,0,0.07); }
+  .deep-category { font-size: 11px; letter-spacing: 0.1em; color: #b8860b; font-weight: 800; margin-bottom: 7px; }
+  .deep-headline { font-size: 16px; font-weight: 800; color: #1a1a1a; line-height: 1.45; margin-bottom: 8px; }
+  .deep-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .deep-source { font-size: 11px; color: rgba(0,0,0,0.4); }
+  .deep-body { padding: 0 22px 28px; display: flex; flex-direction: column; gap: 22px; }
+  .section-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .section-bar { width: 2px; height: 14px; border-radius: 1px; flex-shrink: 0; }
+  .section-title { font-size: 14px; font-weight: 800; letter-spacing: 0.08em; }
+  .divider { height: 1px; background: rgba(0,0,0,0.08); }
+  .detail-paragraphs { display: flex; flex-direction: column; gap: 11px; }
+  .detail-para { font-size: 15px; color: rgba(0,0,0,0.78); line-height: 1.75; }
+  .impact-items { display: flex; flex-direction: column; gap: 9px; }
+  .impact-item { border-radius: 0 7px 7px 0; padding: 11px 14px; border-left-width: 3px; border-left-style: solid; }
+  .impact-area-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+  .impact-icon { font-size: 12px; font-weight: 800; }
+  .impact-area { font-size: 13px; font-weight: 800; letter-spacing: 0.06em; }
+  .impact-text { font-size: 15px; color: rgba(0,0,0,0.78); line-height: 1.72; }
+
+  /* ── MOBILE RESPONSIVE ── */
+  /* Deep section — always shown */
+  .mobile-deep-section { background: #f5f5f3; }
+  .mobile-deep-header {
+    padding: 12px 18px 10px;
+    font-size: 12px; font-weight: 800; letter-spacing: 0.1em;
+    color: #fff; background: #1a3a6b;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+  }
+  .mobile-inline-deep {
+    border-bottom: 3px solid rgba(0,0,0,0.15);
+    background: #fff;
+  }
+  .mobile-inline-deep .deep-id { padding: 14px 18px 12px; background: #fff; }
+  .mobile-inline-deep .deep-body { padding: 0 18px 20px; }
+  .mobile-signal-rank {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; font-weight: 800;
+    letter-spacing: 0.06em;
+  }
+  .col-footer { border-top: 1px solid rgba(0,0,0,0.07); }
+  @media (max-width: 480px) {
+    .header-title { font-size: 11px; letter-spacing: 0.03em; }
+    .header { height: auto; padding: 10px 14px; flex-wrap: wrap; }
+    .header-divider { display: none; }
+    .deep-body { padding: 0 14px 20px; }
+    .deep-id, .mobile-inline-deep .deep-id { padding: 12px 14px; }
+    .signal-row { padding: 12px 14px; }
+    .rri-box { padding: 12px 14px; }
+    .exec-header { padding: 8px 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-title">BÁO CÁO RỦI RO THỊ TRƯỜNG HÀNG NGÀY</div>
+    <div class="header-divider"></div>
+    <div class="header-date" id="header-date"></div>
+  </header>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- LEFT -->
+    <div class="col-left">
+      <!-- RRI -->
+      <div class="rri-box" id="rri-box">
+        <div>
+          <div class="rri-label">ĐIỂM RỦI RO</div>
+          <div style="display:flex;align-items:baseline">
+            <span class="rri-score" id="rri-score">—</span>
+            <span class="rri-denom">/ 100</span>
+          </div>
+        </div>
+        <span class="rri-pill" id="rri-pill">—</span>
+      </div>
+
+      <!-- EXECUTIVE SUMMARY -->
+      <div class="exec-header">
+        <div class="exec-label">NỘI DUNG CHÍNH</div>
+        <div id="exec-sub"></div>
+      </div>
+
+      <!-- SIGNAL LIST -->
+      <div id="signal-list"></div>
+
+      <!-- FOOTER -->
+      <div class="col-footer">
+        <strong>Thực hiện:</strong> Thanh Hải và Hồng Quang (Phòng Tài chính - Kế hoạch)
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col-right">
+      <div class="right-header">THÔNG TIN CHI TIẾT &amp; TÁC ĐỘNG — Nhấn vào tín hiệu bên trái để xem</div>
+      <div id="deep-panel-container" style="flex:1;display:flex;flex-direction:column">
+        <div class="right-empty">Chọn một tín hiệu để xem phân tích</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+const META = {
+  date: "Thứ Tư, 10/06/2026",
+  scanned_at: "08:45 SA",
+  signals_count: 3,
+  total_raw_signals: 3,
+  no_signal_note: null,
+};
+
+const SIGNALS = [
+  {
+    id: 1, rank: 1,
+    scores: { revenue: 3, cost: 4, scope: 4, duration: 4 },
+    category: "Thiên tai & Khí hậu",
+    category_short: "KHÍ HẬU",
+    icon: "🌡️",
+    headline: "El Niño xác suất 80–90% hình thành tháng 6, nắng nóng kỷ lục và hạn hán diện rộng",
+    summary: "Trung tâm Dự báo KTTV Quốc gia xác nhận El Niño đang chớm hình thành, dự báo từ 12/6 Bắc Bộ bước vào đợt nắng nóng diện rộng. Nhiệt độ cả nước cao hơn 0,5–1°C so với trung bình. Nguy cơ hạn hán tại Tây Nguyên, Nam Bộ trong quý 3–4 và xâm nhập mặn ĐBSCL đầu năm 2027 ở mức cao.",
+    direction: "negative",
+    key_metric: "Xác suất El Niño: 80–90%",
+    sources: [
+      { name: "Vietnam.vn", url: "https://www.vietnam.vn/du-bao-thoi-tiet-10-ngay-tu-09-06-2026-den-19-06-2026-mien-bac-sap-chuyen-nang-nong-dien-rong" },
+      { name: "VTC News", url: "https://vtcnews.vn/gia-xang-dau-hom-nay-10-6-dien-bien-trai-chieu-ar1022754.html" }
+    ]
+  },
+  {
+    id: 2, rank: 2,
+    scores: { revenue: 2, cost: 3, scope: 3, duration: 3 },
+    category: "Logistics & Chuỗi cung ứng",
+    category_short: "LOGISTICS",
+    icon: "⛽",
+    headline: "Xăng E10 bắt buộc toàn quốc từ 1/6, giá dầu Brent 91 USD/thùng gây áp lực chi phí vận tải",
+    summary: "Lộ trình xăng sinh học E10 bắt buộc chính thức có hiệu lực toàn quốc từ 1/6/2026. Bộ Công Thương yêu cầu các đầu mối đảm bảo không gián đoạn nguồn cung, chia sẻ lợi nhuận hợp lý. Cùng lúc, giá dầu Brent neo cao tại 91,45 USD/thùng ngày 10/6, tạo áp lực kép lên chi phí logistics toàn chuỗi cung ứng bán lẻ.",
+    direction: "negative",
+    key_metric: "Brent: 91,45 USD/thùng (10/6)",
+    sources: [
+      { name: "Bộ Công Thương", url: "https://moit.gov.vn/tin-tuc/diem-bao-nganh-cong-thuong-ngay-9-6-2026.html" },
+      { name: "VTC News", url: "https://vtcnews.vn/gia-xang-dau-hom-nay-10-6-dien-bien-trai-chieu-ar1022754.html" }
+    ]
+  },
+  {
+    id: 3, rank: 3,
+    scores: { revenue: 2, cost: 3, scope: 3, duration: 2 },
+    category: "Chuỗi cung ứng",
+    category_short: "CUNG ỨNG",
+    icon: "🐷",
+    headline: "Giá heo hơi tiếp tục giảm đáy mới 10/6: Cà Mau 62.000 đ/kg, sức mua thấp điểm",
+    summary: "Giá heo hơi toàn quốc ngày 10/6 dao động 64.000–68.000 đ/kg; miền Trung và miền Nam tiếp tục chịu áp lực giảm với mức điều chỉnh thêm 1.000 đ/kg. Tổng đàn heo tăng 2,8%, thịt nhập khẩu 5 tháng tăng 26,1%, trong khi sức mua yếu theo mùa học sinh nghỉ hè khiến giá khó phục hồi trong ngắn hạn.",
+    direction: "positive",
+    key_metric: "Heo hơi: 62.000–68.000 đ/kg",
+    sources: [
+      { name: "Vietbao.vn", url: "https://vietbao.vn/gia-heo-hoi-hom-nay-106-tiep-tuc-giam-nhieu-noi-cham-day-moi-594920.html" },
+      { name: "MotTheGioi", url: "https://motthegioi.vn/gia-heo-hoi-mien-nam-cham-day/" }
+    ]
+  }
+];
+
+const DEEP = {
+  1: {
+    detail: [
+      "Theo dự báo 10 ngày từ ngày 09–19/06/2026, Bắc Bộ và vùng Tây Bắc đang có mưa dông rải rác, nhưng từ ngày 12/6 áp cao cận nhiệt đới tác động mạnh hơn, đẩy toàn bộ miền Bắc và Trung Bộ vào đợt nắng nóng diện rộng. Theo Trung tâm Dự báo KTTV Quốc gia, ENSO đang chuyển pha sang El Niño trong tháng 6/2026 với xác suất lên tới 80–90%, và nhiệt độ cả nước trong tháng 6 được dự báo cao hơn trung bình nhiều năm từ 0,5–1°C.",
+      "El Niño không chỉ gây nắng nóng kỷ lục trong ngắn hạn mà còn là tín hiệu cảnh báo dài hạn nghiêm trọng. Trong tháng 5 vừa qua, nhiều khu vực ở Trung Bộ, Tây Nguyên và Nam Bộ đã ghi nhận lượng mưa thiếu hụt 30–60% so với trung bình nhiều năm. Xu hướng này được dự báo kéo dài, tiềm ẩn nguy cơ hạn hán diện rộng tại Tây Nguyên và Đồng bằng sông Cửu Long, kéo theo rủi ro xâm nhập mặn nghiêm trọng trong mùa khô 2026–2027.",
+      "Những năm El Niño mạnh trong lịch sử như 1997–1998 và 2015–2016 cho thấy tác động kép: nắng nóng làm tăng mạnh chi phí vận hành các điểm bán lẻ (điều hòa, bảo quản lạnh), đồng thời gây đứt gãy nguồn cung nông sản do hạn hán ảnh hưởng vùng trồng. Bộ Nông nghiệp và Môi trường đã ban hành cảnh báo sớm và khuyến nghị các địa phương điều chỉnh lịch gieo trồng, bảo đảm tích trữ nước ngay từ tháng 6."
+    ],
+    impact: [
+      { area: "Vận hành cửa hàng Co.opmart & Co.opFood", dir: "negative", text: "Nắng nóng kéo dài đến trên 39–40°C tạo áp lực tăng chi phí điện làm mát tại toàn bộ hệ thống Co.opmart và Co.opFood, đặc biệt các cửa hàng tại Bắc Bộ và Trung Bộ. Hiệu quả vận hành chuỗi có điểm yếu về chi phí cố định sẽ bị khuếch đại thêm trong giai đoạn này." },
+      { area: "Chuỗi cung ứng nông sản & thực phẩm tươi", dir: "negative", text: "El Niño là mối đe dọa trực tiếp đến nguồn cung rau củ, trái cây và thủy sản từ Tây Nguyên và ĐBSCL — hai vùng cung ứng chiến lược cho toàn hệ thống SGC. Hạn hán kéo dài có thể đẩy giá thu mua tăng và ảnh hưởng độ đa dạng ngành hàng tươi sống tại Co.opmart và Co.opFood." },
+      { area: "Cơ hội ngành hàng đồ lạnh & giải nhiệt", dir: "positive", text: "Nắng nóng cực đoan thúc đẩy nhu cầu kem, nước uống đóng chai, đồ uống giải nhiệt và thực phẩm bảo quản lạnh — phân khúc Cheers và Co.opmart có thể tận dụng nhu cầu tăng đột biến này nếu quản lý tốt hàng tồn kho và trưng bày kệ hàng theo mùa." },
+      { area: "Rủi ro dài hạn: xâm nhập mặn ĐBSCL", dir: "negative", text: "Nguy cơ thiếu nước và xâm nhập mặn tại ĐBSCL đầu năm 2027 có thể ảnh hưởng sản lượng lúa gạo và thủy sản — các ngành hàng chiến lược mà đơn vị sản xuất Xuân Hồng và SCD cung ứng cho hệ thống. Cần kích hoạt kế hoạch đa dạng hóa nguồn cung từ ngay thời điểm này." }
+    ]
+  },
+  2: {
+    detail: [
+      "Kể từ ngày 1/6/2026, lộ trình bắt buộc sử dụng xăng sinh học E10 trên toàn quốc đã chính thức có hiệu lực. Bộ Công Thương yêu cầu các thương nhân đầu mối và phân phối xăng dầu phải bố trí đủ nhân lực, chủ động nguồn hàng và không để gián đoạn cung ứng. Trong bối cảnh đó, giá dầu Brent và WTI ngày 10/6 ghi nhận diễn biến trái chiều — Brent ở mức 91,45 USD/thùng trong khi WTI đạt 89,12 USD/thùng — phản ánh sức ép địa chính trị toàn cầu vẫn còn hiện diện.",
+      "Áp lực kép từ chính sách E10 mới và giá dầu quốc tế neo cao tạo ra bất định đáng kể trong cấu trúc chi phí logistics bán lẻ. Phí vận tải đường bộ — chiếm tỷ trọng lớn trong chi phí phân phối từ trung tâm phân phối đến từng điểm bán — sẽ phản ánh những biến động này qua biểu phí điều chỉnh từ các đơn vị vận tải đối tác. Với hệ thống khoảng 800 điểm bán trải rộng trên 63 tỉnh thành, cấu trúc chi phí logistics của SGC có mức độ tiếp xúc rất cao với rủi ro này.",
+      "Ở chiều hướng tích cực, chính sách xăng E10 phản ánh cam kết dài hạn của Chính phủ về chuyển đổi năng lượng sạch — việc tuân thủ sớm và đồng bộ giúp SGC tránh rủi ro pháp lý, đồng thời tạo cơ hội định vị thương hiệu bán lẻ có trách nhiệm môi trường. Trong trung hạn, nếu giá dầu thế giới hạ nhiệt, áp lực chi phí sẽ giảm bớt."
+    ],
+    impact: [
+      { area: "Chi phí logistics toàn hệ thống", dir: "negative", text: "Mạng lưới phân phối trải rộng 63 tỉnh thành của SGC, đặc biệt chuỗi Co.opFood với 363 cửa hàng và Co.opmart phủ khắp toàn quốc, chịu áp lực tăng chi phí vận tải đầu vào trực tiếp. Chi phí phân phối hàng tươi sống — vốn yêu cầu vận chuyển lạnh và tần suất cao — đặc biệt nhạy cảm với giá nhiên liệu." },
+      { area: "Biên lợi nhuận ngành hàng", dir: "negative", text: "Trong bối cảnh gross margin toàn hệ thống SGC đang thấp hơn kỳ vọng, áp lực chi phí logistics tăng thêm từ giá nhiên liệu neo cao sẽ khuếch đại thêm khó khăn trong việc cải thiện biên lợi nhuận, đặc biệt tại chuỗi Co.opFood vốn có gross margin thấp nhất hệ thống." },
+      { area: "Cơ hội tối ưu hóa vận hành", dir: "positive", text: "Áp lực chi phí này là chất xúc tác để đẩy nhanh tối ưu hóa tuyến đường phân phối, tăng tần suất lấp đầy xe, và đàm phán hợp đồng logistics dài hạn với mức giá cố định — những biện pháp mà hệ thống logistics nội bộ SGC hoàn toàn có thể triển khai." }
+    ]
+  },
+  3: {
+    detail: [
+      "Ngày 10/6/2026, giá heo hơi cả nước tiếp tục xu hướng giảm, dao động trong vùng 64.000–68.000 đồng/kg. Khu vực miền Trung và miền Nam ghi nhận mức điều chỉnh thêm 1.000 đồng/kg so với ngày hôm trước, với một số địa phương như Cà Mau chạm mốc thấp 62.000 đồng/kg. Nguyên nhân chính đến từ sự kết hợp của tổng đàn heo cả nước tăng 2,8% so với cùng kỳ cùng lượng thịt nhập khẩu 5 tháng đầu năm 2026 tăng mạnh 26,1% — trong khi sức mua yếu theo mùa khi học sinh nghỉ hè làm giảm nhu cầu bếp ăn tập thể.",
+      "Diễn biến giá heo hơi giảm liên tục trong chuỗi nhiều ngày — từ mức trên 67.000 đồng/kg đầu tháng 6 xuống vùng 62.000–64.000 đồng/kg tại miền Nam — phản ánh tình trạng mất cân bằng cung-cầu cục bộ, đặc biệt nghiêm trọng tại các tỉnh chăn nuôi tập trung như Cà Mau, Lâm Đồng và khu vực Tây Nam Bộ. Người chăn nuôi nhỏ lẻ đang đứng trước áp lực thua lỗ khi chi phí đầu vào thức ăn chăn nuôi vẫn cao.",
+      "Đối với ngành bán lẻ thực phẩm, đây là tín hiệu tích cực trong ngắn hạn khi giá mua vào thịt heo tươi giảm — cho phép duy trì biên lợi nhuận ngành hàng tốt hơn hoặc tăng cường khuyến mãi nhằm kéo traffic vào cửa hàng. Tuy nhiên, trong dài hạn, nếu người chăn nuôi thu hẹp đàn do thua lỗ, nguồn cung có thể đảo chiều tạo ra rủi ro tăng giá và thiếu hàng theo chu kỳ."
+    ],
+    impact: [
+      { area: "Co.opmart — Ngành hàng thịt tươi sống", dir: "positive", text: "Giá heo hơi giảm cho phép Co.opmart cải thiện biên lợi nhuận ngành hàng thịt tươi hoặc triển khai các chương trình khuyến mãi hấp dẫn để tăng lưu lượng khách hàng, đặc biệt cạnh tranh trực tiếp với WinMart và Bách Hóa Xanh — hai đối thủ đang đẩy mạnh mở rộng tại thị trường thực phẩm tươi sống." },
+      { area: "Chiến lược giá cạnh tranh", dir: "positive", text: "Bối cảnh nguồn cung dồi dào tạo cơ hội để SGC tăng cường định vị giá tốt — điểm mạnh về vai trò bình ổn giá được nhà nước hỗ trợ — nhằm giữ chân tệp khách hàng thành viên trung thành vốn là lợi thế phòng thủ chiến lược trước làn sóng cạnh tranh." },
+      { area: "Rủi ro trung hạn: đảo chiều nguồn cung", dir: "negative", text: "Nếu giá heo hơi duy trì ở mức thấp kéo dài, người chăn nuôi nhỏ lẻ có xu hướng giảm đàn, tiềm ẩn rủi ro nguồn cung đảo chiều thiếu hụt trong 2–3 tháng tới — một chu kỳ quen thuộc trong ngành chăn nuôi Việt Nam cần được theo dõi chủ động." }
+    ]
+  }
+};
+
+// ─── ENGINE ───────────────────────────────────────────────────────────────────
+const RISK_TYPES = {
+  logistics:        { id:"logistics",        severity:"critical" },
+  demand:           { id:"demand",           severity:"high"     },
+  supply:           { id:"supply",           severity:"medium"   },
+  policy:           { id:"policy",           severity:"low"      },
+  natural_disaster: { id:"natural_disaster", severity:"critical" },
+};
+const SEV_ORDER = { critical:4, high:3, medium:2, low:1 };
+
+function classifyRisks(s) {
+  const t = [s.headline, s.summary, s.category].join(" ").toLowerCase();
+  const m = [];
+  if (/logistics|giao hàng|vận chuyển|kho|last.mile/.test(t)) m.push("logistics");
+  if (/nhu cầu|tiêu dùng|hành vi|online|mua sắm|bỏ giỏ|thị phần|demand/.test(t)) m.push("demand");
+  if (/nguồn cung|nhà cung cấp|supply|tồn kho|khan hiếm|thiếu hàng|nguyên liệu|heo hơi|chăn nuôi/.test(t)) m.push("supply");
+  if (/nghị định|chính sách|quy định|pháp lý|thuế|chính phủ|policy|luật|hiệu lực|xăng e10/.test(t)) m.push("policy");
+  if (/dịch|bệnh|asf|thiên tai|lũ|bão|hạn hán|khí hậu|thời tiết|el ni|nắng nóng|el nino/.test(t)) m.push("natural_disaster");
+  if (!m.length) m.push("demand");
+  return m;
+}
+function getDominantRisk(s) {
+  return classifyRisks(s).reduce((b, id) => SEV_ORDER[RISK_TYPES[id].severity] > SEV_ORDER[RISK_TYPES[b].severity] ? id : b);
+}
+function calcESS(s) {
+  const sc = s.scores || {};
+  const raw = ((sc.revenue||1)*0.35)+((sc.cost||1)*0.35)+((sc.scope||1)*0.15)+((sc.duration||1)*0.15);
+  return Math.round(raw*20*10)/10;
+}
+const RISK_BASE = { logistics:{base:76,min:76,max:100}, demand:{base:51,min:51,max:75}, supply:{base:26,min:26,max:50}, policy:{base:1,min:1,max:25}, natural_disaster:{base:76,min:76,max:100} };
+function calcRiskScore(s) {
+  const ess = calcESS(s), cfg = RISK_BASE[getDominantRisk(s)];
+  return Math.round(Math.min(cfg.max, Math.max(cfg.min, cfg.base + ess*0.24))*10)/10;
+}
+function getRiskLevel(score) {
+  if (score >= 76) return { level:"NGHIÊM TRỌNG", color:"#7f0000", bg:"rgba(127,0,0,0.08)", border:"rgba(127,0,0,0.2)" };
+  if (score >= 51) return { level:"CAO",          color:"#dc2626", bg:"rgba(220,38,38,0.08)",  border:"rgba(220,38,38,0.2)"  };
+  if (score >= 26) return { level:"TRUNG BÌNH",   color:"#d97706", bg:"rgba(217,119,6,0.09)",  border:"rgba(217,119,6,0.2)"  };
+  return               { level:"THẤP",         color:"#16a34a", bg:"rgba(22,163,74,0.08)",  border:"rgba(22,163,74,0.18)" };
+}
+function calcRRI(signals) {
+  const total = signals.reduce((sum,s) => sum+calcRiskScore(s), 0);
+  if (!total) return { index:0, level:getRiskLevel(0) };
+  const crit = signals.filter(s => calcRiskScore(s) >= 76).reduce((sum,s) => sum+calcRiskScore(s), 0);
+  const index = Math.round((crit/total)*100*10)/10;
+  return { index, level: getRiskLevel(index) };
+}
+const DIR_META = { negative:{icon:"↓",color:"#dc2626"}, positive:{icon:"↑",color:"#16a34a"}, neutral:{icon:"→",color:"#8d99ae"} };
+
+function renderSources(s, cssClass) {
+  const srcs = s.sources || (s.source ? [{name: s.source, url: s.source_url||null}] : []);
+  return srcs.map(src =>
+    src.url
+      ? `<a class="${cssClass}-link" href="${src.url}" target="_blank" rel="noopener">${src.name} ↗</a>`
+      : `<span class="${cssClass}">${src.name}</span>`
+  ).join('<span style="color:rgba(0,0,0,0.25);margin:0 3px">·</span>');
+}
+const IMPACT_STYLE = {
+  negative:{ color:"#e63946", bg:"rgba(230,57,70,0.07)",    border:"rgba(230,57,70,0.18)",    icon:"↓" },
+  positive:{ color:"#2a9d8f", bg:"rgba(42,157,143,0.07)",   border:"rgba(42,157,143,0.18)",   icon:"↑" },
+  neutral: { color:"#8d99ae", bg:"rgba(141,153,174,0.07)",  border:"rgba(141,153,174,0.15)",  icon:"→" },
+};
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+let selectedId = SIGNALS[0].id;
+
+function init() {
+  document.getElementById('header-date').textContent = META.date + '  ·  Cập nhật lúc ' + META.scanned_at;
+  const isMobile = true; // always single-column layout
+  const note = isMobile
+    ? 'Phân tích chi tiết hiển thị đầy đủ bên dưới'
+    : 'Nhấn vào tín hiệu để xem phân tích chiến lược';
+  document.getElementById('exec-sub').innerHTML =
+    (() => {
+      const n = META.signals_count || SIGNALS.length;
+      const totalRaw = META.total_raw_signals || n;
+      const label = SIGNALS.length === 0
+        ? (META.no_signal_note || "Không có tín hiệu rủi ro đáng kể trong 24h qua")
+        : totalRaw > 5
+          ? `Top ${n} tín hiệu quan trọng nhất hôm nay`
+          : `${n} tín hiệu quan trọng nhất hôm nay`;
+      return `<span class="exec-sub-main">${label}</span>`;
+    })() +
+    `<span class="exec-sub-note">${note}</span>`;
+  renderRRI();
+  renderList();
+  renderDeep(selectedId);
+}
+
+function renderRRI() {
+  const rri = calcRRI(SIGNALS);
+  const box = document.getElementById('rri-box');
+  document.getElementById('rri-score').textContent = rri.index.toFixed(1);
+  document.getElementById('rri-score').style.color = '#fff';
+  const pill = document.getElementById('rri-pill');
+  pill.textContent = rri.level.level;
+  pill.style.background = 'rgba(255,255,255,0.2)';
+  pill.style.color = '#fff';
+  document.getElementById('rri-box').style.background = rri.level.color;
+}
+
+function buildDeepHTML(s) {
+  const d = DEEP[s.id];
+  if (!d) return '';
+  const rs = calcRiskScore(s), rl = getRiskLevel(rs);
+  return `
+  <div class="deep-panel mobile-inline-deep">
+    <div class="deep-id">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+        <span class="mobile-signal-rank" style="color:${rl.color}">#${s.rank}</span>
+        <span style="font-size:11px;color:rgba(0,0,0,0.62);font-weight:600">${s.icon} ${s.category_short}</span>
+        <span class="severity-pill" style="background:${rl.color};margin-left:auto">${rl.level}</span>
+      </div>
+      <div class="deep-headline">${s.headline}</div>
+      <div class="deep-meta">
+        <span class="deep-sources">${renderSources(s,"deep-source")}</span>
+      </div>
+    </div>
+    <div class="deep-body">
+      <div style="padding-top:16px">
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#d4af37"></div>
+          <span class="section-title" style="color:#b8860b">THÔNG TIN CHI TIẾT</span>
+        </div>
+        <div class="detail-paragraphs">${d.detail.map(p=>`<p class="detail-para">${p}</p>`).join('')}</div>
+      </div>
+      <div class="divider"></div>
+      <div>
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#f4a261"></div>
+          <span class="section-title" style="color:#e07b30">TÁC ĐỘNG ĐẾN SAIGON CO.OP</span>
+        </div>
+        <div class="impact-items">
+          ${d.impact.map(item => {
+            const st = IMPACT_STYLE[item.dir];
+            return `<div class="impact-item" style="background:${st.bg};border:1px solid ${st.border};border-left:3px solid ${st.color}">
+              <div class="impact-area-row">
+                <span class="impact-icon" style="color:${st.color}">${st.icon}</span>
+                <span class="impact-area" style="color:${st.color}">${item.area.toUpperCase()}</span>
+              </div>
+              <p class="impact-text">${item.text}</p>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderList() {
+  const isMobile = true; // always single-column layout
+  const list = document.getElementById('signal-list');
+
+  // Signal rows (all devices)
+  const rowsHTML = SIGNALS.map(s => {
+    const rs = calcRiskScore(s), rl = getRiskLevel(rs), d = DIR_META[s.direction];
+    const isActive = s.id === selectedId && !isMobile;
+    return `
+    <div class="signal-row${isActive?' active':''}" data-id="${s.id}" style="border-left-color:${isActive?'#d4af37':rl.color}">
+      <div class="row-top">
+        <span class="row-rank" style="color:${rl.color}">#${s.rank}</span>
+        <span class="row-cat">${s.icon} ${s.category_short}</span>
+        <span class="severity-pill" style="background:${rl.color}">${rl.level}</span>
+        ${isActive?`<span class="row-active-hint" style="margin-left:8px">›› phân tích sâu</span>`:''}
+      </div>
+      <div class="row-headline${isActive?' active':''}">${s.headline}</div>
+      <div class="row-summary">${s.summary}</div>
+      <div class="row-footer">
+        <span class="row-metric" style="color:${d.color}">${d.icon} ${s.key_metric}</span>
+        <span class="row-sources">${renderSources(s,"row-source")}</span>
+      </div>
+      <div class="impact-bar-wrap" style="display:none"></div>
+    </div>`;
+  }).join('');
+
+  // Mobile: append "PHÂN TÍCH CHI TIẾT" section after all rows
+  let mobileDeepHTML = '';
+  if (isMobile) {
+    mobileDeepHTML = `
+    <div class="mobile-deep-section">
+      <div class="mobile-deep-header">PHÂN TÍCH CHI TIẾT</div>
+      ${SIGNALS.map(s => buildDeepHTML(s)).join('')}
+    </div>`;
+  }
+
+  list.innerHTML = rowsHTML + mobileDeepHTML;
+}
+
+function renderDeep(id) {
+  const s = SIGNALS.find(x => x.id === id);
+  const d = DEEP[id];
+  if (!s || !d) return;
+  const rs = calcRiskScore(s), rl = getRiskLevel(rs);
+  const container = document.getElementById('deep-panel-container');
+  container.innerHTML = `
+  <div class="deep-panel">
+    <div class="deep-id">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:800;color:${rl.color}">#${s.rank}</span>
+        <span class="deep-category" style="margin-bottom:0">${s.icon} ${s.category}</span>
+        <span class="severity-pill" style="background:${rl.color};margin-left:auto">${rl.level}</span>
+      </div>
+      <div class="deep-headline">${s.headline}</div>
+      <div class="deep-meta">
+        <span class="deep-sources">${renderSources(s,"deep-source")}</span>
+      </div>
+    </div>
+    <div class="deep-body">
+      <div style="padding-top:20px">
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#d4af37"></div>
+          <span class="section-title" style="color:#b8860b">THÔNG TIN CHI TIẾT</span>
+        </div>
+        <div class="detail-paragraphs">${d.detail.map(p=>`<p class="detail-para">${p}</p>`).join('')}</div>
+      </div>
+      <div class="divider"></div>
+      <div>
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#f4a261"></div>
+          <span class="section-title" style="color:#e07b30">TÁC ĐỘNG ĐẾN SAIGON CO.OP</span>
+        </div>
+        <div class="impact-items">
+          ${d.impact.map(item => {
+            const st = IMPACT_STYLE[item.dir];
+            return `<div class="impact-item" style="background:${st.bg};border:1px solid ${st.border};border-left:3px solid ${st.color}">
+              <div class="impact-area-row">
+                <span class="impact-icon" style="color:${st.color}">${st.icon}</span>
+                <span class="impact-area" style="color:${st.color}">${item.area.toUpperCase()}</span>
+              </div>
+              <p class="impact-text">${item.text}</p>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+init();
+</script>
+</body>
+</html>
