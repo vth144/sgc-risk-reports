@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Báo Cáo Rủi Ro Thị Trường Hàng Ngày</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;600;700;800&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'IBM Plex Sans', sans-serif; background: #f5f5f3; color: #2d2d2d; }
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+  .header {
+    display: flex; align-items: center; gap: 16; padding: 0 20px;
+    height: 50px; min-height: 50px; border-bottom: 1px solid rgba(0,0,0,0.08);
+    background: #fff; flex-shrink: 0; gap: 16px;
+  }
+  .header-title { font-size: 16px; font-weight: 800; letter-spacing: 0.06em; color: #1a1a1a; flex-shrink: 0; }
+  .header-divider { width: 1px; height: 20px; background: rgba(0,0,0,0.1); flex-shrink: 0; }
+  .header-date { font-size: 13px; color: rgba(0,0,0,0.6); white-space: nowrap; }
+
+  .body { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+
+  /* LEFT */
+  .col-left { display: flex; flex-direction: column; }
+
+  /* RRI */
+  .rri-box { background: #888; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .rri-label { font-size: 15px; font-weight: 800; letter-spacing: 0.1em; color: rgba(255,255,255,0.95); margin-bottom: 6px; }
+  .rri-score { font-family: 'IBM Plex Mono', monospace; font-size: 44px; font-weight: 900; line-height: 1; color: #fff; }
+  .rri-denom { font-size: 16px; color: rgba(255,255,255,0.6); margin-left: 8px; }
+  .rri-pill { font-size: 15px; font-weight: 800; letter-spacing: 0.06em; color: #fff; border-radius: 5px; padding: 7px 18px; white-space: nowrap; background: rgba(255,255,255,0.2); }
+
+  .exec-header { padding: 9px 18px; border-bottom: 1px solid rgba(0,0,0,0.07); background: #1a3a6b; flex-shrink: 0; }
+  .exec-label { font-size: 15px; letter-spacing: 0.1em; color: #fff; font-weight: 800; margin-bottom: 5px; }
+  .exec-sub-main { font-size: 14px; font-weight: 700; color: #fff; display: block; margin-bottom: 3px; }
+  .exec-sub-note { font-size: 11px; font-weight: 400; color: rgba(255,255,255,0.6); display: block; }
+
+  /* SIGNAL ROW */
+  .signal-row {
+    padding: 15px 18px; cursor: default;
+    border-bottom: 2px solid rgba(0,0,0,0.15);
+    border-left: 3px solid transparent;
+    background: #fff; transition: background 0.15s;
+  }
+  .signal-row:hover { background: #fff; }
+  .signal-row.active { background: rgba(212,175,55,0.08); border-left-color: #d4af37 !important; }
+  .row-top { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; flex-wrap: wrap; }
+  .row-rank { font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 800; }
+  .row-cat { font-size: 12px; color: rgba(0,0,0,0.65); letter-spacing: 0.05em; font-weight: 600; }
+  .row-active-hint { margin-left: auto; font-size: 11px; color: #b8860b; }
+  .severity-pill { display: inline-block; font-size: 14px; font-weight: 800; letter-spacing: 0.06em; color: #fff; border-radius: 4px; padding: 4px 11px; margin-left: auto; }
+  .row-headline { font-size: 16px; font-weight: 700; line-height: 1.45; margin-bottom: 8px; color: #111; }
+  .row-headline.active { color: #000; }
+  .row-summary { font-size: 14px; color: rgba(0,0,0,0.78); line-height: 1.65; margin-bottom: 10px; }
+  .row-footer { display: flex; align-items: center; justify-content: space-between; }
+  .row-metric { font-size: 14px; font-weight: 700; }
+  .row-source { font-size: 12px; color: rgba(0,0,0,0.4); }
+  .row-source-link {
+    font-size: 11px; color: #0005CB; text-decoration: none;
+    border-bottom: 1px solid rgba(0,5,203,0.3);
+    transition: border-color 0.15s;
+  }
+  .row-source-link:hover { border-bottom-color: #0005CB; }
+  .deep-source { font-size: 11px; color: rgba(0,0,0,0.4); }
+  .deep-source-link {
+    font-size: 11px; color: #0005CB; text-decoration: none;
+    border-bottom: 1px solid rgba(0,5,203,0.3);
+    transition: border-color 0.15s;
+  }
+  .deep-source-link:hover { border-bottom-color: #0005CB; }
+
+  /* FOOTER */
+  .col-footer { margin-top: auto; padding: 10px 18px; border-top: 1px solid rgba(0,0,0,0.07); font-size: 10px; color: rgba(0,0,0,0.35); }
+  .col-footer strong { color: rgba(0,0,0,0.5); }
+
+  /* RIGHT */
+  .col-right { display: none; }
+  .right-header { padding: 9px 22px 8px; border-bottom: 1px solid rgba(0,0,0,0.07); background: #fff; flex-shrink: 0; font-size: 11px; font-weight: 700; color: rgba(0,0,0,0.45); letter-spacing: 0.05em; }
+  .right-empty { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; color: rgba(0,0,0,0.25); }
+
+  /* DEEP PANEL */
+  .deep-panel { flex: 1; display: flex; flex-direction: column; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .deep-id { padding: 16px 22px 14px; border-bottom: 1px solid rgba(0,0,0,0.07); }
+  .deep-category { font-size: 11px; letter-spacing: 0.1em; color: #b8860b; font-weight: 800; margin-bottom: 7px; }
+  .deep-headline { font-size: 16px; font-weight: 800; color: #1a1a1a; line-height: 1.45; margin-bottom: 8px; }
+  .deep-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .deep-source { font-size: 11px; color: rgba(0,0,0,0.4); }
+  .deep-body { padding: 0 22px 28px; display: flex; flex-direction: column; gap: 22px; }
+  .section-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .section-bar { width: 2px; height: 14px; border-radius: 1px; flex-shrink: 0; }
+  .section-title { font-size: 14px; font-weight: 800; letter-spacing: 0.08em; }
+  .divider { height: 1px; background: rgba(0,0,0,0.08); }
+  .detail-paragraphs { display: flex; flex-direction: column; gap: 11px; }
+  .detail-para { font-size: 15px; color: rgba(0,0,0,0.78); line-height: 1.75; }
+  .impact-items { display: flex; flex-direction: column; gap: 9px; }
+  .impact-item { border-radius: 0 7px 7px 0; padding: 11px 14px; border-left-width: 3px; border-left-style: solid; }
+  .impact-area-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+  .impact-icon { font-size: 12px; font-weight: 800; }
+  .impact-area { font-size: 13px; font-weight: 800; letter-spacing: 0.06em; }
+  .impact-text { font-size: 15px; color: rgba(0,0,0,0.78); line-height: 1.72; }
+
+  /* ── MOBILE RESPONSIVE ── */
+  .mobile-deep-section { background: #f5f5f3; }
+  .mobile-deep-header {
+    padding: 12px 18px 10px;
+    font-size: 12px; font-weight: 800; letter-spacing: 0.1em;
+    color: #fff; background: #1a3a6b;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+  }
+  .mobile-inline-deep {
+    border-bottom: 3px solid rgba(0,0,0,0.15);
+    background: #fff;
+  }
+  .mobile-inline-deep .deep-id { padding: 14px 18px 12px; background: #fff; }
+  .mobile-inline-deep .deep-body { padding: 0 18px 20px; }
+  .mobile-signal-rank {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; font-weight: 800;
+    letter-spacing: 0.06em;
+  }
+  .col-footer { border-top: 1px solid rgba(0,0,0,0.07); }
+  @media (max-width: 480px) {
+    .header-title { font-size: 11px; letter-spacing: 0.03em; }
+    .header { height: auto; padding: 10px 14px; flex-wrap: wrap; }
+    .rri-score { font-size: 36px; }
+    .row-headline { font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <span class="header-title">SAIGON CO.OP · RỦI RO THỊ TRƯỜNG</span>
+    <div class="header-divider"></div>
+    <span class="header-date" id="header-date"></span>
+  </header>
+  <div class="body">
+    <div class="col-left">
+      <div class="rri-box" id="rri-box">
+        <div>
+          <div class="rri-label">RETAIL RISK INDEX</div>
+          <div><span class="rri-score" id="rri-score">–</span><span class="rri-denom">/100</span></div>
+        </div>
+        <div class="rri-pill" id="rri-pill">–</div>
+      </div>
+      <div class="exec-header">
+        <div class="exec-label">BÁO CÁO RỦI RO HÀNG NGÀY</div>
+        <div id="exec-sub"></div>
+      </div>
+      <div id="signal-list"></div>
+      <div class="col-footer">
+        <strong>Phòng Tài chính – Kế hoạch · Saigon Co.op</strong> &nbsp;·&nbsp; Thực hiện: Thanh Hải &amp; Hồng Quang &nbsp;·&nbsp; Dữ liệu từ nguồn tin đã xác minh trong 24h
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// === DỮ LIỆU BÁO CÁO ===
+
+const META = {
+  date: "Thứ Năm, 11/06/2026",
+  scanned_at: "09:00 SA",
+  signals_count: 3,
+  total_raw_signals: 3,
+};
+
+const SIGNALS = [
+  {
+    id: 1, rank: 1,
+    scores: { revenue: 3, cost: 4, scope: 4, duration: 3 },
+    category: "Logistics & Vận tải",
+    category_short: "LOGISTICS",
+    icon: "🚢",
+    headline: "Cước container Châu Á–Bắc Âu tăng lên mức cao nhất 18 tháng",
+    summary: "Chỉ số cước thực tế SCFIS tuyến Bắc Âu tăng 22,7% đạt 2.501 điểm, mức cao nhất trong 18 tháng. MSC nâng FAK giữa tháng 6 lên 5.640 USD/FEU, Maersk chào 4.670 USD/FEU. Nguyên nhân chính từ căng thẳng quân sự Iran–Israel và liên minh Gemini (Maersk–Hapag-Lloyd) giảm 5% sức chở trên tuyến Viễn Đông–Bắc Âu từ tháng 6.",
+    direction: "negative",
+    key_metric: "SCFIS Bắc Âu +22,7% — cao nhất 18 tháng",
+    sources: [
+      { name: "THILOGI", url: "https://thilogi.vn/highlights-thi-truong-van-tai-container-quoc-te/" }
+    ]
+  },
+  {
+    id: 2, rank: 2,
+    scores: { revenue: 3, cost: 3, scope: 4, duration: 3 },
+    category: "Kinh tế vĩ mô",
+    category_short: "VĨ MÔ",
+    icon: "🌐",
+    headline: "Chi phí đầu vào kỷ lục 15 năm, tỷ giá và lãi suất liên ngân hàng căng thẳng",
+    summary: "Báo cáo vĩ mô tháng 5/2026 của PVI AM ghi nhận áp lực chi phí đầu vào đạt mức kỷ lục 15 năm dù PMI sản xuất phục hồi lên 52,8 điểm. Lãi suất liên ngân hàng duy trì ở vùng 7–8%, tăng trưởng tín dụng (4,4%) vượt xa huy động (2,6%). Áp lực tỷ giá căng thẳng do biến động quốc tế và dự trữ ngoại hối thu hẹp.",
+    direction: "negative",
+    key_metric: "Chi phí đầu vào kỷ lục 15 năm · VNIBOR ~7–8%",
+    sources: [
+      { name: "PVI AM", url: "https://www.pviam.com.vn/tong-quan-kinh-te-vi-mo-thang-5-2026/" }
+    ]
+  },
+  {
+    id: 3, rank: 3,
+    scores: { revenue: 2, cost: 2, scope: 3, duration: 4 },
+    category: "Chính sách & Pháp lý",
+    category_short: "CHÍNH SÁCH",
+    icon: "📋",
+    headline: "Bộ Y tế triển khai ba trụ cột kiểm soát toàn diện chuỗi giá trị thực phẩm",
+    summary: "VietnamPlus ngày 10/6 đưa tin Bộ Y tế đang dồn lực xây dựng Dự thảo Luật An toàn thực phẩm sửa đổi, hoàn thiện bộ máy quản lý và số hóa hệ thống thông tin dữ liệu thực phẩm. Đây là bước triển khai tiếp theo sau khi Nghị quyết 15/2026/NQ-CP tạm ngưng Nghị định 46/2026/NĐ-CP để rà soát lại điều kiện thực thi.",
+    direction: "neutral",
+    key_metric: "Luật ATTP sửa đổi + số hóa dữ liệu thực phẩm quốc gia",
+    sources: [
+      { name: "VietnamPlus", url: "https://www.vietnamplus.vn/ba-tru-cot-chinh-sach-de-kiem-soat-xuyen-suot-toan-bo-chuoi-gia-tri-thuc-pham-post1115618.vnp" }
+    ]
+  },
+];
+
+const DEEP = {
+  1: {
+    detail: [
+      "Thị trường vận tải container tuyến Châu Á–Bắc Âu đang trải qua một đợt tăng giá mạnh, với chỉ số cước thực tế SCFIS Bắc Âu leo lên mức cao nhất trong vòng 18 tháng. Hợp đồng tương lai EC2607 (tháng 7/2026) tăng lên 4.000 điểm — mức chưa từng có trên thị trường này. Nguyên nhân cốt lõi là căng thẳng quân sự Iran–Israel khiến các hãng tàu tiếp tục né tuyến Biển Đỏ–Kênh Suez và phải đi vòng qua Mũi Hảo Vọng, kéo dài hành trình và tiêu hao thêm nhiên liệu.",
+      "Liên minh Gemini (Maersk–Hapag-Lloyd) đang thay thế tàu lớn 17.000–20.000 TEU bằng tàu nhỏ hơn 12.000–13.000 TEU, làm giảm khoảng 5% tổng sức chở hàng tuần trên tuyến Viễn Đông–Bắc Âu tính từ tháng 6. Trong khi đó, giá nhiên liệu hàng hải VLSFO tại Singapore duy trì ở mức 796 USD/tấn, tạo áp lực chi phí vận hành liên tục. MSC và Maersk đều đã điều chỉnh biểu giá FAK và cước chào cuối tháng 6 lên mức rất cao.",
+      "Trong nước, tuyến vận tải container nội địa và chi phí logistics đường bộ cũng chịu áp lực leo thang do xăng dầu biến động. Chi phí nhiên liệu chiếm 35–40% cước vận tải đường bộ Việt Nam, khiến các nhà vận tải khó cam kết giá ổn định trong dài hạn. Áp lực này chưa có dấu hiệu sớm hạ nhiệt khi xung đột Trung Đông vẫn diễn biến phức tạp.",
+    ],
+    impact: [
+      { area: "Chi phí hàng hóa nhập khẩu", dir: "negative", text: "Các mặt hàng tiêu dùng nhập khẩu (thực phẩm chế biến, đồ dùng gia đình, hàng FMCG) cung ứng cho hệ thống Co.opmart và Co.opXtra đối mặt với chi phí vận chuyển tăng cao, tạo áp lực lên giá vốn hàng bán (COGS) toàn chuỗi." },
+      { area: "Chuỗi cung ứng nội địa", dir: "negative", text: "Chi phí vận chuyển hàng hóa từ các nhà cung cấp khu vực và từ đơn vị sản xuất Xuân Hồng về hệ thống phân phối tăng lên, khuếch đại thêm vào biên lợi nhuận vốn đã mỏng của các chuỗi Co.opFood và Co.opSmile." },
+      { area: "Chiến lược đàm phán nhà cung cấp", dir: "neutral", text: "Trong bối cảnh toàn ngành cùng chịu áp lực logistics, Saigon Co.op có thể tận dụng quy mô mua hàng để đàm phán điều khoản chia sẻ chi phí vận chuyển, hoặc đẩy mạnh nguồn hàng trong nước nhằm giảm phụ thuộc vào hàng nhập khẩu." },
+      { area: "Cơ hội hàng Việt Nam", dir: "positive", text: "Sự leo thang chi phí nhập khẩu tạo lợi thế tương đối cho hàng Việt Nam và nhãn riêng SGC — đặc biệt các sản phẩm do đơn vị sản xuất Xuân Hồng cung cấp, vốn không phụ thuộc vào cước vận tải biển quốc tế." },
+    ],
+  },
+  2: {
+    detail: [
+      "Báo cáo tổng quan kinh tế vĩ mô tháng 5/2026 của PVI AM ghi nhận mặc dù PMI sản xuất phục hồi rõ nét lên 52,8 điểm — mức cao nhất từ tháng 2 — nhưng một phần tăng trưởng đến từ hoạt động tích trữ hàng tồn kho trước lo ngại xung đột Trung Đông, chưa phản ánh nhu cầu tiêu dùng cuối thực sự cải thiện. Đáng lo ngại hơn, áp lực chi phí đầu vào đang ở mức kỷ lục 15 năm, tạo ra tình huống nghịch lý khi sản xuất mở rộng nhưng biên lợi nhuận doanh nghiệp lại bị nén.",
+      "Về thanh khoản hệ thống tài chính, tăng trưởng tín dụng (4,4% từ đầu năm) đang vượt xa tốc độ tăng huy động (2,6%), khiến lãi suất liên ngân hàng neo cao quanh vùng 7–8%/năm dù Ngân hàng Nhà nước đã bơm ròng hơn 30.700 tỷ đồng qua kênh OMO. Áp lực tỷ giá VND/USD tiếp tục căng thẳng do biến động địa chính trị quốc tế và dự trữ ngoại hối co hẹp.",
+      "Về sức mua người tiêu dùng, CPI 5 tháng tăng 4,31% so với cùng kỳ — tiệm cận mức trần mục tiêu 4,5% của Quốc hội — trong khi chi phí sinh hoạt thực tế (điện, nhà ở, xăng dầu) tăng rõ hơn nhóm thực phẩm. Bức tranh này gợi ý sức mua thực của người tiêu dùng đang chịu sức ép ngầm, dù tăng trưởng bán lẻ danh nghĩa vẫn ở mức cao.",
+    ],
+    impact: [
+      { area: "Sức mua & Cầu tiêu dùng", dir: "negative", text: "Áp lực lạm phát và chi phí sinh hoạt tăng có thể dẫn đến hành vi thắt chặt chi tiêu, đặc biệt ở phân khúc khách hàng trung bình — nhóm chiếm tỷ trọng lớn trong tệp khách Co.opmart và Co.opFood. Người tiêu dùng có xu hướng chuyển sang mua ít hơn, ưu tiên hàng khuyến mãi và nhãn riêng giá tốt." },
+      { area: "Chi phí vốn & Vận hành", dir: "negative", text: "Lãi suất liên ngân hàng neo cao tạo áp lực lên chi phí vốn lưu động của toàn hệ thống phân phối. Với mô hình HTX có hạn chế nhất định trong huy động vốn nhanh, SGC cần quản lý vòng quay hàng tồn kho và công nợ thương mại chặt chẽ hơn trong giai đoạn này." },
+      { area: "Nhãn riêng & Hàng giá trị", dir: "positive", text: "Môi trường thắt chặt chi tiêu là cơ hội để nhãn riêng SGC (Co.op Select) tăng thị phần trong giỏ hàng của khách. Đây là thời điểm thuận lợi để đẩy mạnh truyền thông về giá trị/giá của nhãn hàng riêng so với hàng thương hiệu quốc tế tương đương." },
+      { area: "Định giá cạnh tranh", dir: "neutral", text: "Tình hình vĩ mô hiện tại đặt ra bài toán khó: chi phí đầu vào tăng nhưng khó chuyển sang giá bán lẻ trong bối cảnh cạnh tranh gay gắt với WinMart, Bách Hóa Xanh. SGC cần cân bằng giữa bảo vệ biên lợi nhuận và duy trì lợi thế giá để giữ chân khách hàng." },
+    ],
+  },
+  3: {
+    detail: [
+      "Ngày 10/6/2026, VietnamPlus đưa tin Bộ Y tế đang tập trung nguồn lực triển khai ba trụ cột chính sách quản lý an toàn thực phẩm: (1) xây dựng Dự thảo Luật An toàn thực phẩm sửa đổi nhằm cập nhật khung pháp lý hiện đại, (2) hoàn thiện bộ máy quản lý nhà nước theo hướng phân cấp rõ ràng hơn, và (3) số hóa hệ thống thông tin dữ liệu thực phẩm để theo dõi liên tục toàn chuỗi giá trị từ sản xuất đến tiêu dùng.",
+      "Đây là diễn biến tiếp nối sau khi Chính phủ ban hành Nghị quyết 15/2026/NQ-CP tạm ngưng hiệu lực Nghị định 46/2026/NĐ-CP và Nghị quyết 66.13/2026/NQ-CP — hai văn bản quy định điều kiện an toàn thực phẩm và đăng ký sản phẩm vốn có hiệu lực từ đầu năm 2026. Sự tạm ngưng này cho thấy quá trình thực thi đang gặp khó khăn, và Bộ Y tế đang rà soát lại để xây dựng lộ trình thực tế hơn.",
+      "Năm 2026, Ngày An toàn Thực phẩm Thế giới (tháng 6) có chủ đề 'Từ gánh nặng đến giải pháp — thực phẩm an toàn khắp mọi nơi', tạo bối cảnh quốc tế thúc đẩy Việt Nam tăng cường kiểm soát. Tháng hành động vì ATTP đang trong giai đoạn cao điểm, với yêu cầu doanh nghiệp hoàn thiện báo cáo hệ thống phân phối trước ngày 12/6/2026.",
+    ],
+    impact: [
+      { area: "Hàng nhãn riêng & Kinh doanh tổng hợp", dir: "neutral", text: "Trong giai đoạn Nghị định 46/2026 tạm ngưng hiệu lực, SGC cần theo dõi sát lộ trình ban hành văn bản thay thế để chủ động chuẩn bị hồ sơ công bố sản phẩm cho dòng nhãn riêng. Sự chủ động sớm sẽ tránh rủi ro gián đoạn kinh doanh khi quy định mới có hiệu lực." },
+      { area: "Hệ thống phân phối & Báo cáo cơ quan quản lý", dir: "negative", text: "Yêu cầu hoàn thiện báo cáo danh sách hệ thống phân phối trước ngày 12/6/2026 (theo điểm báo Công Thương ngày 9/6) đặt ra deadline ngắn cho toàn bộ doanh nghiệp bán lẻ, bao gồm SGC với mạng lưới gần 800 điểm bán. Cần đảm bảo bộ phận pháp lý hoàn thành đúng hạn." },
+      { area: "Kiểm tra ATTP tại điểm bán", dir: "neutral", text: "Giai đoạn Tháng hành động ATTP đang cao điểm có thể đồng nghĩa với tần suất kiểm tra đột xuất tăng tại các điểm bán. Đây vừa là rủi ro cần chuẩn bị kỹ về hồ sơ, vừa là cơ hội để SGC thể hiện uy tín về an toàn thực phẩm so với kênh mua sắm phi chính thống." },
+      { area: "Số hóa chuỗi thực phẩm — Cơ hội dài hạn", dir: "positive", text: "Chủ trương số hóa hệ thống thông tin thực phẩm quốc gia phù hợp với hướng đầu tư công nghệ của SGC. Khi hệ thống này đi vào hoạt động, doanh nghiệp có hệ thống quản lý dữ liệu tốt sẽ có lợi thế trong truy xuất nguồn gốc và tuân thủ nhanh hơn đối thủ nhỏ lẻ." },
+    ],
+  },
+};
+
+// ─── ENGINE ───────────────────────────────────────────────────────────────────
+const RISK_TYPES = {
+  logistics:        { id:"logistics",        severity:"critical" },
+  demand:           { id:"demand",           severity:"high"     },
+  supply:           { id:"supply",           severity:"medium"   },
+  policy:           { id:"policy",           severity:"low"      },
+  natural_disaster: { id:"natural_disaster", severity:"critical" },
+};
+const SEV_ORDER = { critical:4, high:3, medium:2, low:1 };
+
+function classifyRisks(s) {
+  const t = [s.headline, s.summary, s.category].join(" ").toLowerCase();
+  const m = [];
+  if (/logistics|giao hàng|vận chuyển|kho|last.mile|cước|container|tàu/.test(t)) m.push("logistics");
+  if (/nhu cầu|tiêu dùng|hành vi|online|mua sắm|bỏ giỏ|thị phần|demand|sức mua/.test(t)) m.push("demand");
+  if (/nguồn cung|nhà cung cấp|supply|tồn kho|khan hiếm|thiếu hàng|nguyên liệu/.test(t)) m.push("supply");
+  if (/nghị định|chính sách|quy định|pháp lý|thuế|chính phủ|policy|luật|hiệu lực|bộ y tế|attp|thực phẩm an toàn/.test(t)) m.push("policy");
+  if (/dịch|bệnh|asf|thiên tai|lũ|bão|hạn hán|khí hậu|thời tiết/.test(t)) m.push("natural_disaster");
+  if (!m.length) m.push("demand");
+  return m;
+}
+function getDominantRisk(s) {
+  return classifyRisks(s).reduce((b, id) => SEV_ORDER[RISK_TYPES[id].severity] > SEV_ORDER[RISK_TYPES[b].severity] ? id : b);
+}
+function calcESS(s) {
+  const sc = s.scores || {};
+  const raw = ((sc.revenue||1)*0.35)+((sc.cost||1)*0.35)+((sc.scope||1)*0.15)+((sc.duration||1)*0.15);
+  return Math.round(raw*20*10)/10;
+}
+const RISK_BASE = { logistics:{base:76,min:76,max:100}, demand:{base:51,min:51,max:75}, supply:{base:26,min:26,max:50}, policy:{base:1,min:1,max:25}, natural_disaster:{base:76,min:76,max:100} };
+function calcRiskScore(s) {
+  const ess = calcESS(s), cfg = RISK_BASE[getDominantRisk(s)];
+  return Math.round(Math.min(cfg.max, Math.max(cfg.min, cfg.base + ess*0.24))*10)/10;
+}
+function getRiskLevel(score) {
+  if (score >= 76) return { level:"NGHIÊM TRỌNG", color:"#7f0000", bg:"rgba(127,0,0,0.08)", border:"rgba(127,0,0,0.2)" };
+  if (score >= 51) return { level:"CAO",          color:"#dc2626", bg:"rgba(220,38,38,0.08)",  border:"rgba(220,38,38,0.2)"  };
+  if (score >= 26) return { level:"TRUNG BÌNH",   color:"#d97706", bg:"rgba(217,119,6,0.09)",  border:"rgba(217,119,6,0.2)"  };
+  return               { level:"THẤP",         color:"#16a34a", bg:"rgba(22,163,74,0.08)",  border:"rgba(22,163,74,0.18)" };
+}
+function calcRRI(signals) {
+  const total = signals.reduce((sum,s) => sum+calcRiskScore(s), 0);
+  if (!total) return { index:0, level:getRiskLevel(0) };
+  const crit = signals.filter(s => calcRiskScore(s) >= 76).reduce((sum,s) => sum+calcRiskScore(s), 0);
+  const index = Math.round((crit/total)*100*10)/10;
+  return { index, level: getRiskLevel(index) };
+}
+const DIR_META = { negative:{icon:"↓",color:"#dc2626"}, positive:{icon:"↑",color:"#16a34a"}, neutral:{icon:"→",color:"#8d99ae"} };
+
+function renderSources(s, cssClass) {
+  const srcs = s.sources || (s.source ? [{name: s.source, url: s.source_url||null}] : []);
+  return srcs.map(src =>
+    src.url
+      ? `<a class="${cssClass}-link" href="${src.url}" target="_blank" rel="noopener">${src.name} ↗</a>`
+      : `<span class="${cssClass}">${src.name}</span>`
+  ).join('<span style="color:rgba(0,0,0,0.25);margin:0 3px">·</span>');
+}
+const IMPACT_STYLE = {
+  negative:{ color:"#e63946", bg:"rgba(230,57,70,0.07)",    border:"rgba(230,57,70,0.18)",    icon:"↓" },
+  positive:{ color:"#2a9d8f", bg:"rgba(42,157,143,0.07)",   border:"rgba(42,157,143,0.18)",   icon:"↑" },
+  neutral: { color:"#8d99ae", bg:"rgba(141,153,174,0.07)",  border:"rgba(141,153,174,0.15)",  icon:"→" },
+};
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+let selectedId = SIGNALS[0].id;
+
+function init() {
+  document.getElementById('header-date').textContent = META.date + '  ·  Cập nhật lúc ' + META.scanned_at;
+  const n = META.signals_count || SIGNALS.length;
+  const totalRaw = META.total_raw_signals || n;
+  const label = SIGNALS.length === 0
+    ? (META.no_signal_note || "Không có tín hiệu rủi ro đáng kể trong 24h qua")
+    : totalRaw > 5
+      ? `Top ${n} tín hiệu quan trọng nhất hôm nay`
+      : `${n} tín hiệu quan trọng nhất hôm nay`;
+  document.getElementById('exec-sub').innerHTML =
+    `<span class="exec-sub-main">${label}</span>` +
+    `<span class="exec-sub-note">Phân tích chi tiết hiển thị đầy đủ bên dưới</span>`;
+  renderRRI();
+  renderList();
+}
+
+function renderRRI() {
+  const rri = calcRRI(SIGNALS);
+  document.getElementById('rri-score').textContent = rri.index.toFixed(1);
+  document.getElementById('rri-score').style.color = '#fff';
+  const pill = document.getElementById('rri-pill');
+  pill.textContent = rri.level.level;
+  pill.style.background = 'rgba(255,255,255,0.2)';
+  pill.style.color = '#fff';
+  document.getElementById('rri-box').style.background = rri.level.color;
+}
+
+function buildDeepHTML(s) {
+  const d = DEEP[s.id];
+  if (!d) return '';
+  const rs = calcRiskScore(s), rl = getRiskLevel(rs);
+  return `
+  <div class="deep-panel mobile-inline-deep">
+    <div class="deep-id">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+        <span class="mobile-signal-rank" style="color:${rl.color}">#${s.rank}</span>
+        <span style="font-size:11px;color:rgba(0,0,0,0.62);font-weight:600">${s.icon} ${s.category_short}</span>
+        <span class="severity-pill" style="background:${rl.color};margin-left:auto">${rl.level}</span>
+      </div>
+      <div class="deep-headline">${s.headline}</div>
+      <div class="deep-meta">
+        <span class="deep-sources">${renderSources(s,"deep-source")}</span>
+      </div>
+    </div>
+    <div class="deep-body">
+      <div style="padding-top:16px">
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#d4af37"></div>
+          <span class="section-title" style="color:#b8860b">THÔNG TIN CHI TIẾT</span>
+        </div>
+        <div class="detail-paragraphs">${d.detail.map(p=>`<p class="detail-para">${p}</p>`).join('')}</div>
+      </div>
+      <div class="divider"></div>
+      <div>
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#f4a261"></div>
+          <span class="section-title" style="color:#e07b30">TÁC ĐỘNG ĐẾN SAIGON CO.OP</span>
+        </div>
+        <div class="impact-items">
+          ${d.impact.map(item => {
+            const st = IMPACT_STYLE[item.dir];
+            return `<div class="impact-item" style="background:${st.bg};border:1px solid ${st.border};border-left:3px solid ${st.color}">
+              <div class="impact-area-row">
+                <span class="impact-icon" style="color:${st.color}">${st.icon}</span>
+                <span class="impact-area" style="color:${st.color}">${item.area.toUpperCase()}</span>
+              </div>
+              <p class="impact-text">${item.text}</p>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderList() {
+  const list = document.getElementById('signal-list');
+  const rowsHTML = SIGNALS.map(s => {
+    const rs = calcRiskScore(s), rl = getRiskLevel(rs), d = DIR_META[s.direction];
+    return `
+    <div class="signal-row" data-id="${s.id}" style="border-left-color:${rl.color}">
+      <div class="row-top">
+        <span class="row-rank" style="color:${rl.color}">#${s.rank}</span>
+        <span class="row-cat">${s.icon} ${s.category_short}</span>
+        <span class="severity-pill" style="background:${rl.color}">${rl.level}</span>
+      </div>
+      <div class="row-headline">${s.headline}</div>
+      <div class="row-summary">${s.summary}</div>
+      <div class="row-footer">
+        <span class="row-metric" style="color:${d.color}">${d.icon} ${s.key_metric}</span>
+        <span class="row-sources">${renderSources(s,"row-source")}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const mobileDeepHTML = `
+    <div class="mobile-deep-section">
+      <div class="mobile-deep-header">PHÂN TÍCH CHI TIẾT</div>
+      ${SIGNALS.map(s => buildDeepHTML(s)).join('')}
+    </div>`;
+
+  list.innerHTML = rowsHTML + mobileDeepHTML;
+}
+
+init();
+</script>
+</body>
+</html>
