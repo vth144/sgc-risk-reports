@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Báo Cáo Rủi Ro Thị Trường Hàng Ngày</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;600;700;800&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'IBM Plex Sans', sans-serif; background: #f5f5f3; color: #2d2d2d; }
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+  .header {
+    display: flex; align-items: center; gap: 16; padding: 0 20px;
+    height: 50px; min-height: 50px; border-bottom: 1px solid rgba(0,0,0,0.08);
+    background: #fff; flex-shrink: 0; gap: 16px;
+  }
+  .header-title { font-size: 16px; font-weight: 800; letter-spacing: 0.06em; color: #1a1a1a; flex-shrink: 0; }
+  .header-divider { width: 1px; height: 20px; background: rgba(0,0,0,0.1); flex-shrink: 0; }
+  .header-date { font-size: 13px; color: rgba(0,0,0,0.6); white-space: nowrap; }
+
+  .body { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+
+  /* LEFT */
+  .col-left { display: flex; flex-direction: column; }
+
+  /* RRI */
+  .rri-box { background: #888; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .rri-label { font-size: 15px; font-weight: 800; letter-spacing: 0.1em; color: rgba(255,255,255,0.95); margin-bottom: 6px; }
+  .rri-score { font-family: 'IBM Plex Mono', monospace; font-size: 44px; font-weight: 900; line-height: 1; color: #fff; }
+  .rri-denom { font-size: 16px; color: rgba(255,255,255,0.6); margin-left: 8px; }
+  .rri-pill { font-size: 15px; font-weight: 800; letter-spacing: 0.06em; color: #fff; border-radius: 5px; padding: 7px 18px; white-space: nowrap; background: rgba(255,255,255,0.2); }
+
+  .exec-header { padding: 9px 18px; border-bottom: 1px solid rgba(0,0,0,0.07); background: #1a3a6b; flex-shrink: 0; }
+  .exec-label { font-size: 15px; letter-spacing: 0.1em; color: #fff; font-weight: 800; margin-bottom: 5px; }
+  .exec-sub-main { font-size: 14px; font-weight: 700; color: #fff; display: block; margin-bottom: 3px; }
+  .exec-sub-note { font-size: 11px; font-weight: 400; color: rgba(255,255,255,0.6); display: block; }
+
+  /* SIGNAL ROW */
+  .signal-row {
+    padding: 15px 18px; cursor: default;
+    border-bottom: 2px solid rgba(0,0,0,0.15);
+    border-left: 3px solid transparent;
+    background: #fff; transition: background 0.15s;
+  }
+  .signal-row:hover { background: #fff; }
+  .signal-row.active { background: rgba(212,175,55,0.08); border-left-color: #d4af37 !important; }
+  .row-top { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; flex-wrap: wrap; }
+  .row-rank { font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 800; }
+  .row-cat { font-size: 12px; color: rgba(0,0,0,0.65); letter-spacing: 0.05em; font-weight: 600; }
+  .row-active-hint { margin-left: auto; font-size: 11px; color: #b8860b; }
+  .severity-pill { display: inline-block; font-size: 14px; font-weight: 800; letter-spacing: 0.06em; color: #fff; border-radius: 4px; padding: 4px 11px; margin-left: auto; }
+  .row-headline { font-size: 16px; font-weight: 700; line-height: 1.45; margin-bottom: 8px; color: #111; }
+  .row-headline.active { color: #000; }
+  .row-summary { font-size: 14px; color: rgba(0,0,0,0.78); line-height: 1.65; margin-bottom: 10px; }
+  .row-footer { display: flex; align-items: center; justify-content: space-between; }
+  .row-metric { font-size: 14px; font-weight: 700; }
+  .row-source { font-size: 12px; color: rgba(0,0,0,0.4); }
+  .row-source-link {
+    font-size: 11px; color: #0005CB; text-decoration: none;
+    border-bottom: 1px solid rgba(0,5,203,0.3);
+    transition: border-color 0.15s;
+  }
+  .row-source-link:hover { border-bottom-color: #0005CB; }
+  .deep-source { font-size: 11px; color: rgba(0,0,0,0.4); }
+  .deep-source-link {
+    font-size: 11px; color: #0005CB; text-decoration: none;
+    border-bottom: 1px solid rgba(0,5,203,0.3);
+    transition: border-color 0.15s;
+  }
+  .deep-source-link:hover { border-bottom-color: #0005CB; }
+
+  /* FOOTER */
+  .col-footer { margin-top: auto; padding: 10px 18px; border-top: 1px solid rgba(0,0,0,0.07); font-size: 10px; color: rgba(0,0,0,0.35); }
+  .col-footer strong { color: rgba(0,0,0,0.5); }
+
+  /* RIGHT */
+  .col-right { display: none; }
+  .right-header { padding: 9px 22px 8px; border-bottom: 1px solid rgba(0,0,0,0.07); background: #fff; flex-shrink: 0; font-size: 11px; font-weight: 700; color: rgba(0,0,0,0.45); letter-spacing: 0.05em; }
+  .right-empty { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; color: rgba(0,0,0,0.25); }
+
+  /* DEEP PANEL */
+  .deep-panel { flex: 1; display: flex; flex-direction: column; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .deep-id { padding: 16px 22px 14px; border-bottom: 1px solid rgba(0,0,0,0.07); }
+  .deep-category { font-size: 11px; letter-spacing: 0.1em; color: #b8860b; font-weight: 800; margin-bottom: 7px; }
+  .deep-headline { font-size: 16px; font-weight: 800; color: #1a1a1a; line-height: 1.45; margin-bottom: 8px; }
+  .deep-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .deep-source { font-size: 11px; color: rgba(0,0,0,0.4); }
+  .deep-body { padding: 0 22px 28px; display: flex; flex-direction: column; gap: 22px; }
+  .section-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .section-bar { width: 2px; height: 14px; border-radius: 1px; flex-shrink: 0; }
+  .section-title { font-size: 14px; font-weight: 800; letter-spacing: 0.08em; }
+  .divider { height: 1px; background: rgba(0,0,0,0.08); }
+  .detail-paragraphs { display: flex; flex-direction: column; gap: 11px; }
+  .detail-para { font-size: 15px; color: rgba(0,0,0,0.78); line-height: 1.75; }
+  .impact-items { display: flex; flex-direction: column; gap: 9px; }
+  .impact-item { border-radius: 0 7px 7px 0; padding: 11px 14px; border-left-width: 3px; border-left-style: solid; }
+  .impact-area-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+  .impact-icon { font-size: 12px; font-weight: 800; }
+  .impact-area { font-size: 13px; font-weight: 800; letter-spacing: 0.06em; }
+  .impact-text { font-size: 15px; color: rgba(0,0,0,0.78); line-height: 1.72; }
+
+  /* ── MOBILE RESPONSIVE ── */
+  /* Deep section — always shown */
+  .mobile-deep-section { background: #f5f5f3; }
+  .mobile-deep-header {
+    padding: 12px 18px 10px;
+    font-size: 12px; font-weight: 800; letter-spacing: 0.1em;
+    color: #fff; background: #1a3a6b;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+  }
+  .mobile-inline-deep {
+    border-bottom: 3px solid rgba(0,0,0,0.15);
+    background: #fff;
+  }
+  .mobile-inline-deep .deep-id { padding: 14px 18px 12px; background: #fff; }
+  .mobile-inline-deep .deep-body { padding: 0 18px 20px; }
+  .mobile-signal-rank {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; font-weight: 800;
+    letter-spacing: 0.06em;
+  }
+  .col-footer { border-top: 1px solid rgba(0,0,0,0.07); }
+  @media (max-width: 480px) {
+    .header-title { font-size: 11px; letter-spacing: 0.03em; }
+    .header { height: auto; padding: 10px 14px; flex-wrap: wrap; }
+    .header-divider { display: none; }
+    .deep-body { padding: 0 14px 20px; }
+    .deep-id, .mobile-inline-deep .deep-id { padding: 12px 14px; }
+    .signal-row { padding: 12px 14px; }
+    .rri-box { padding: 12px 14px; }
+    .exec-header { padding: 8px 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-title">BÁO CÁO RỦI RO THỊ TRƯỜNG HÀNG NGÀY</div>
+    <div class="header-divider"></div>
+    <div class="header-date" id="header-date"></div>
+  </header>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- LEFT -->
+    <div class="col-left">
+      <!-- RRI -->
+      <div class="rri-box" id="rri-box">
+        <div>
+          <div class="rri-label">ĐIỂM RỦI RO</div>
+          <div style="display:flex;align-items:baseline">
+            <span class="rri-score" id="rri-score">—</span>
+            <span class="rri-denom">/ 100</span>
+          </div>
+        </div>
+        <span class="rri-pill" id="rri-pill">—</span>
+      </div>
+
+      <!-- EXECUTIVE SUMMARY -->
+      <div class="exec-header">
+        <div class="exec-label">NỘI DUNG CHÍNH</div>
+        <div id="exec-sub"></div>
+      </div>
+
+      <!-- SIGNAL LIST -->
+      <div id="signal-list"></div>
+
+      <!-- FOOTER -->
+      <div class="col-footer">
+        <strong>Thực hiện:</strong> Thanh Hải và Hồng Quang (Phòng Tài chính - Kế hoạch)
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col-right">
+      <div class="right-header">THÔNG TIN CHI TIẾT &amp; TÁC ĐỘNG — Nhấn vào tín hiệu bên trái để xem</div>
+      <div id="deep-panel-container" style="flex:1;display:flex;flex-direction:column">
+        <div class="right-empty">Chọn một tín hiệu để xem phân tích</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+const META = {
+  date: "Thứ Ba, 16/06/2026",
+  scanned_at: "08:45 SA",
+  signals_count: 3,
+  total_raw_signals: 4,
+  no_signal_note: null,
+};
+
+const SIGNALS = [
+  { id:1, rank:1, scores:{revenue:3,cost:4,scope:5,duration:3},
+    category:"Chuỗi cung ứng & Logistics", category_short:"LOGISTICS", icon:"🚢",
+    headline:"Thỏa thuận Mỹ-Iran: Hormuz sắp mở nhưng gỡ thủy lôi tốn nhiều tuần",
+    summary:"Mỹ và Iran ký biên bản ghi nhớ hòa bình ngày 14/6, dự kiến ký chính thức tại Thụy Sĩ ngày 19/6. Eo biển Hormuz — tuyến vận chuyển dầu và hàng hóa chiến lược toàn cầu — chuẩn bị mở lại, nhưng các chuyên gia cảnh báo hoạt động vận tải thực tế sẽ mất nhiều tuần để khôi phục do cần gỡ thủy lôi và đảm bảo an ninh hàng hải.",
+    direction:"positive", key_metric:"Dầu Brent -4%, WTI -4.77% ngày 15/6",
+    sources:[
+      {name:"Tuổi Trẻ", url:"https://tuoitre.vn/my-iran-cham-dut-chien-tranh-khi-nao-gia-dau-tro-lai-binh-thuong-20260615134147644.htm"},
+      {name:"Tuổi Trẻ", url:"https://tuoitre.vn/duong-qua-eo-bien-hormuz-go-thuy-loi-rat-ton-thoi-gian-20260615184641874.htm"},
+      {name:"Thanh Niên", url:"https://thanhnien.vn/chien-tranh-iran-tu-con-thinh-no-su-thi-den-thoa-thuan-hoa-binh-185260616001414804.htm"}
+    ]
+  },
+  { id:2, rank:2, scores:{revenue:2,cost:2,scope:3,duration:1},
+    category:"Thiên tai & Khí hậu", category_short:"THIÊN TAI", icon:"🌧️",
+    headline:"Bắc Bộ mưa rất to 60–200mm, cảnh báo ngập lụt và sạt lở đất",
+    summary:"Ngày 16/6, vùng núi và trung du Bắc Bộ chịu ảnh hưởng rãnh áp thấp kết hợp hội tụ gió trên cao, mưa to đến rất to với tổng lượng 60–130mm, cục bộ trên 200mm. Cơ quan khí tượng cảnh báo nguy cơ ngập úng, sạt lở đất và lốc kèm sét. Nam Bộ ngày nắng, chiều tối có mưa dông rải rác.",
+    direction:"negative", key_metric:"Mưa cục bộ >200mm, nguy cơ sạt lở cao",
+    sources:[
+      {name:"Tuổi Trẻ", url:"https://tuoitre.vn/thoi-tiet-hom-nay-16-6-bac-bo-mua-to-nam-bo-chieu-mua-dong-20260615181855791.htm"}
+    ]
+  },
+  { id:3, rank:3, scores:{revenue:2,cost:3,scope:4,duration:3},
+    category:"Giá hàng hóa", category_short:"GIÁ CẢ", icon:"📊",
+    headline:"Giá xăng dầu giảm lần 4 liên tiếp — nhưng rủi ro tăng trở lại cuối hè",
+    summary:"Từ 15h ngày 11/6, xăng E5 RON92 giảm 452 đồng/lít, dầu diesel giảm 989 đồng/lít theo đà hạ nhiệt dầu thế giới. Thỏa thuận Mỹ-Iran tiếp tục kéo giá dầu xuống mức thấp nhất từ tháng 3/2026. Tuy nhiên các chuyên gia cảnh báo giá dầu có thể tăng vọt lên mức ~100 USD/thùng cuối hè nếu dự trữ cạn kiệt trước khi Hormuz hoạt động đầy đủ trở lại.",
+    direction:"neutral", key_metric:"Xăng E5 -452đ/lít từ 11/6; Brent ~83 USD/thùng",
+    sources:[
+      {name:"Dân Việt", url:"https://danviet.vn/gia-xang-dau-hom-nay-16-6-dau-tho-the-gioi-truot-dai-duoi-day-xang-dau-trong-nuoc-ha-gia-d1435426.html"},
+      {name:"Tuổi Trẻ", url:"https://tuoitre.vn/my-iran-cham-dut-chien-tranh-khi-nao-gia-dau-tro-lai-binh-thuong-20260615134147644.htm"}
+    ]
+  },
+];
+
+const DEEP = {
+  1: {
+    detail: [
+      "Sau hơn ba tháng giao tranh làm tê liệt eo biển Hormuz — tuyến đường hàng hải từng vận chuyển tới 20% lượng dầu và LNG toàn cầu — Mỹ và Iran ngày 14/6 thông báo đạt thỏa thuận hòa bình sơ bộ. Lễ ký kết chính thức dự kiến diễn ra ngày 19/6 tại Geneva, Thụy Sĩ, với điều khoản cốt lõi là ngừng bắn ngay lập tức và mở cửa lại eo biển Hormuz không thu phí quá cảnh. Mỹ đổi lại sẽ dỡ phong tỏa hải quân và nới lệnh cấm vận cảng Iran.",
+      "Tuy nhiên, các chuyên gia hàng hải và giới phân tích năng lượng đều nhấn mạnh: thỏa thuận chính trị mới chỉ là bước đầu. Quá trình thực tế khôi phục tuyến vận chuyển đòi hỏi rà phá thủy lôi, xác minh điều kiện an ninh, tái bảo hiểm tàu biển và huy động đội tàu — ước tính mất vài tuần đến vài tháng. Ông Arsenio Dominguez (Tổng thư ký IMO) hoan nghênh thỏa thuận nhưng lưu ý cần thêm thời gian đảm bảo an toàn. Giá cước vận tải container đã tăng nóng trước đó và chưa có dấu hiệu hạ nhiệt ngay.",
+      "Một rủi ro đối chiều cũng được ghi nhận: giá dầu có thể phục hồi mạnh trở lại cuối hè nếu các kho dự trữ chiến lược cạn kiệt trước khi Hormuz thực sự hoạt động đầy đủ. Chủ tịch Rapidan Energy Bob McNally cảnh báo kịch bản dầu Brent có thể tăng vọt lên ~100 USD/thùng vào Q3/2026 nếu tiến trình tái mở Hormuz chậm hơn kỳ vọng.",
+    ],
+    impact: [
+      { area:"Chuỗi cung ứng nhập khẩu", dir:"positive", text:"Nếu eo biển Hormuz tái hoạt động đầy đủ trong Q3/2026, chi phí vận chuyển hàng nhập khẩu (dầu ăn, nguyên liệu thực phẩm chế biến, bao bì) có thể hạ nhiệt dần — tạo điều kiện cải thiện biên lợi nhuận gộp cho toàn hệ thống Co.opmart và Co.opFood." },
+      { area:"Chi phí logistics nội bộ", dir:"positive", text:"Giá xăng dầu trong nước liên tiếp giảm 4 kỳ tạo cơ hội tiết giảm chi phí vận hành kho bãi, phân phối nội hệ thống Saigon Co.op — đặc biệt hữu ích cho các tuyến giao hàng xa của Co.opmart tỉnh." },
+      { area:"Rủi ro giá đầu vào cuối hè", dir:"negative", text:"Kịch bản dầu tăng trở lại ~100 USD/thùng nếu khôi phục Hormuz chậm sẽ khuếch đại áp lực chi phí vận chuyển và giá hàng hóa nhập khẩu trong Q3 — thời điểm trùng với mùa kích cầu hè của SGC." },
+      { area:"Cơ hội tối ưu kế hoạch nhập hàng", dir:"neutral", text:"Giai đoạn giá dầu thấp hiện tại là thời điểm thuận lợi để bộ phận mua hàng và logistics xem xét tái cơ cấu lịch nhập hàng, ưu tiên các đơn hàng có chi phí vận tải thấp trước khi thị trường điều chỉnh tăng lại." },
+    ],
+  },
+  2: {
+    detail: [
+      "Ngày 16/6, hệ thống thời tiết tại miền Bắc Việt Nam chịu tác động kép của rãnh áp thấp và hội tụ gió trên cao, gây mưa lớn trên diện rộng. Khu vực trung du và vùng núi Bắc Bộ có mưa vừa đến rất to, tổng lượng mưa tích lũy từ chiều tối hôm trước đến ngày mai dự báo đạt 60–130mm, cục bộ trên 200mm. Cơ quan khí tượng cảnh báo nguy cơ mưa cường độ lớn hơn 100mm trong 3 giờ tại các điểm cục bộ.",
+      "Trong khi miền Bắc mưa lớn, các tỉnh từ Thanh Hóa đến Đà Nẵng và phía Đông từ Quảng Ngãi đến Đắk Lắk duy trì nắng nóng, có nơi nắng nóng gay gắt trên 38°C. Sự phân hóa thời tiết cực đoan này giữa hai miền diễn ra đồng thời, tạo áp lực kép cho chuỗi cung ứng thực phẩm liên vùng. Nam Bộ và TP.HCM duy trì nắng ngày, chiều tối có mưa dông rải rác.",
+      "Đây là đợt mưa lớn đặt trong bối cảnh El Niño đang có xu hướng mạnh dần trong nửa cuối năm 2026. Cơ quan khí tượng quốc gia dự báo nhiệt độ trung bình toàn quốc sẽ cao hơn trung bình nhiều năm từ 0.5–1.5 độ trong giai đoạn tháng 7–9, với nắng nóng gia tăng và mưa bão diễn biến phức tạp. Nguy cơ lũ quét và sạt lở đất tại các tuyến đường vận chuyển nông sản miền núi phía Bắc là mối lo hiện hữu.",
+    ],
+    impact: [
+      { area:"Chuỗi cung ứng rau củ miền núi", dir:"negative", text:"Mưa lớn và nguy cơ sạt lở đất tại Tây Bắc và Đông Bắc có thể gián đoạn tuyến vận chuyển rau củ tươi từ Đà Lạt, Lào Cai, Sơn La về TP.HCM — gây áp lực giá và nguy cơ thiếu hàng ngành tươi sống tại Co.opmart và Co.opFood." },
+      { area:"Hoạt động kho bãi và phân phối", dir:"negative", text:"Mưa lớn kéo dài ảnh hưởng đến tiến độ giao nhận hàng nội hệ thống tại các kho phân phối khu vực phía Bắc, đặc biệt với các điểm bán Co.opmart tỉnh nơi hạ tầng logistics còn phụ thuộc vào đường bộ." },
+      { area:"Nhu cầu tiêu dùng TP.HCM", dir:"neutral", text:"Nam Bộ dự báo ngày nắng, chiều mưa dông rải rác — thời tiết này thường không tác động mạnh đến doanh số siêu thị nhưng có thể làm tăng nhẹ nhu cầu các mặt hàng phòng ngừa mưa (đồ hộp, thực phẩm khô, nước uống đóng chai)." },
+      { area:"Rủi ro trung hạn El Niño", dir:"negative", text:"Xu hướng El Niño mạnh dần trong Q3–Q4/2026 đặt ra yêu cầu cho SGC xây dựng kế hoạch dự phòng nguồn hàng, đặc biệt với các ngành hàng phụ thuộc nguồn cung nông nghiệp trong nước như thực phẩm tươi sống và rau củ." },
+    ],
+  },
+  3: {
+    detail: [
+      "Từ 15h ngày 11/6/2026, liên Bộ Công Thương - Tài chính điều hành giảm giá xăng dầu lần thứ 4 liên tiếp: xăng E5 RON92 giảm 452 đồng/lít (không cao hơn 21.332 đồng/lít), dầu diesel giảm 989 đồng/lít (không cao hơn 25.877 đồng/lít), dầu mazut giảm 1.037 đồng/kg. Đây là hệ quả trực tiếp của đà giảm giá dầu thô thế giới trong bối cảnh kỳ vọng thỏa thuận Mỹ-Iran. Lúc 6h ngày 16/6, dầu WTI ở mức 81.43 USD/thùng và Brent ở mức 83.17 USD/thùng — thấp nhất kể từ tháng 3/2026.",
+      "Tuy nhiên, các chuyên gia năng lượng cảnh báo đây chưa phải là điểm hạ nhiệt bền vững. Citibank hạ dự báo giá Brent trung bình xuống 75 USD/thùng trong Q3 và 70 USD/thùng trong Q4/2026 theo kịch bản lạc quan. Nhưng kịch bản ngược — được chủ tịch Rapidan Energy Bob McNally nêu — là giá có thể tăng vọt lên ~100 USD/thùng nếu các kho dự trữ chiến lược cạn kiệt trước khi Hormuz thực sự hoạt động đầy đủ. Thực tế, lưu lượng tàu qua Hormuz trước xung đột đạt ít nhất 125 tàu/ngày — trong khi nay mới chỉ có lẻ tẻ tàu được thông quan có giám sát.",
+      "Trong nước, giá xăng E10 RON95-III hiện ở mức 22.060 đồng/lít (vùng I) — thấp hơn đáng kể so với thời điểm đỉnh tháng 4/2026. Mức giảm giá xăng dầu liên tiếp tạo thuận lợi cho chi phí logistics và sức mua người tiêu dùng trong ngắn hạn, nhưng doanh nghiệp cần thận trọng với rủi ro đảo chiều trong Q3/2026.",
+    ],
+    impact: [
+      { area:"Chi phí vận hành hệ thống", dir:"positive", text:"Giá xăng dầu giảm liên tiếp tạo dư địa tiết kiệm chi phí vận hành cho đội xe giao hàng nội bộ SGC, bao gồm phân phối từ kho trung tâm đến gần 800 điểm bán trên toàn quốc." },
+      { area:"Sức mua người tiêu dùng", dir:"positive", text:"Xăng rẻ hơn góp phần giảm chi phí sinh hoạt, hỗ trợ tâm lý và thực tế sức mua của người dân — đặc biệt có lợi cho phân khúc khách hàng trung bình của Co.opmart và Co.opFood trong mùa hè 2026." },
+      { area:"Rủi ro đảo chiều Q3/2026", dir:"negative", text:"Nếu Hormuz mở chậm hơn kỳ vọng hoặc xảy ra căng thẳng địa chính trị mới, giá dầu có thể tăng vọt trở lại trong Q3 — khuếch đại chi phí nhập khẩu nguyên liệu và vận chuyển, bóp méo biên lợi nhuận mỏng của Co.opFood và Co.opSmile." },
+      { area:"Kế hoạch mua hàng nhập khẩu", dir:"neutral", text:"Giai đoạn giá dầu thấp là cơ hội để SCD (đơn vị xuất nhập khẩu của SGC) cân nhắc tối ưu hóa lịch nhập hàng nguyên liệu, đặc biệt các mặt hàng chế biến có thành phần nguyên liệu nhập khẩu qua tuyến vận chuyển Trung Đông." },
+    ],
+  },
+};
+
+// ─── ENGINE ───────────────────────────────────────────────────────────────────
+const RISK_TYPES = {
+  logistics:        { id:"logistics",        severity:"critical" },
+  demand:           { id:"demand",           severity:"high"     },
+  supply:           { id:"supply",           severity:"medium"   },
+  policy:           { id:"policy",           severity:"low"      },
+  natural_disaster: { id:"natural_disaster", severity:"critical" },
+};
+const SEV_ORDER = { critical:4, high:3, medium:2, low:1 };
+
+function classifyRisks(s) {
+  const t = [s.headline, s.summary, s.category].join(" ").toLowerCase();
+  const m = [];
+  if (/logistics|chuỗi cung ứng|vận chuyển|kho|last.mile/.test(t)) m.push("logistics");
+  if (/nhu cầu|tiêu dùng|hành vi|online|mua sắm|bỏ giỏ|thị phần|demand/.test(t)) m.push("demand");
+  if (/nguồn cung|nhà cung cấp|supply|tồn kho|khan hiếm|thiếu hàng|nguyên liệu|giá cả|xăng dầu|giá hàng hóa/.test(t)) m.push("supply");
+  if (/nghị định|chính sách|quy định|pháp lý|thuế|chính phủ|policy|luật|hiệu lực/.test(t)) m.push("policy");
+  if (/dịch|bệnh|asf|thiên tai|lũ|bão|hạn hán|khí hậu|thời tiết|mưa|sạt lở/.test(t)) m.push("natural_disaster");
+  if (!m.length) m.push("demand");
+  return m;
+}
+function getDominantRisk(s) {
+  return classifyRisks(s).reduce((b, id) => SEV_ORDER[RISK_TYPES[id].severity] > SEV_ORDER[RISK_TYPES[b].severity] ? id : b);
+}
+function calcESS(s) {
+  const sc = s.scores || {};
+  const raw = ((sc.revenue||1)*0.35)+((sc.cost||1)*0.35)+((sc.scope||1)*0.15)+((sc.duration||1)*0.15);
+  return Math.round(raw*20*10)/10;
+}
+const RISK_BASE = { logistics:{base:76,min:76,max:100}, demand:{base:51,min:51,max:75}, supply:{base:26,min:26,max:50}, policy:{base:1,min:1,max:25}, natural_disaster:{base:76,min:76,max:100} };
+function calcRiskScore(s) {
+  const ess = calcESS(s), cfg = RISK_BASE[getDominantRisk(s)];
+  return Math.round(Math.min(cfg.max, Math.max(cfg.min, cfg.base + ess*0.24))*10)/10;
+}
+function getRiskLevel(score) {
+  if (score >= 76) return { level:"NGHIÊM TRỌNG", color:"#7f0000", bg:"rgba(127,0,0,0.08)", border:"rgba(127,0,0,0.2)" };
+  if (score >= 51) return { level:"CAO",          color:"#dc2626", bg:"rgba(220,38,38,0.08)",  border:"rgba(220,38,38,0.2)"  };
+  if (score >= 26) return { level:"TRUNG BÌNH",   color:"#d97706", bg:"rgba(217,119,6,0.09)",  border:"rgba(217,119,6,0.2)"  };
+  return               { level:"THẤP",         color:"#16a34a", bg:"rgba(22,163,74,0.08)",  border:"rgba(22,163,74,0.18)" };
+}
+function calcRRI(signals) {
+  const total = signals.reduce((sum,s) => sum+calcRiskScore(s), 0);
+  if (!total) return { index:0, level:getRiskLevel(0) };
+  const crit = signals.filter(s => calcRiskScore(s) >= 76).reduce((sum,s) => sum+calcRiskScore(s), 0);
+  const index = Math.round((crit/total)*100*10)/10;
+  return { index, level: getRiskLevel(index) };
+}
+const DIR_META = { negative:{icon:"↓",color:"#dc2626"}, positive:{icon:"↑",color:"#16a34a"}, neutral:{icon:"→",color:"#8d99ae"} };
+
+function renderSources(s, cssClass) {
+  const srcs = s.sources || (s.source ? [{name: s.source, url: s.source_url||null}] : []);
+  return srcs.map(src =>
+    src.url
+      ? `<a class="${cssClass}-link" href="${src.url}" target="_blank" rel="noopener">${src.name} ↗</a>`
+      : `<span class="${cssClass}">${src.name}</span>`
+  ).join('<span style="color:rgba(0,0,0,0.25);margin:0 3px">·</span>');
+}
+const IMPACT_STYLE = {
+  negative:{ color:"#e63946", bg:"rgba(230,57,70,0.07)",    border:"rgba(230,57,70,0.18)",    icon:"↓" },
+  positive:{ color:"#2a9d8f", bg:"rgba(42,157,143,0.07)",   border:"rgba(42,157,143,0.18)",   icon:"↑" },
+  neutral: { color:"#8d99ae", bg:"rgba(141,153,174,0.07)",  border:"rgba(141,153,174,0.15)",  icon:"→" },
+};
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+let selectedId = SIGNALS[0].id;
+
+function init() {
+  document.getElementById('header-date').textContent = META.date + '  ·  Cập nhật lúc ' + META.scanned_at;
+  const isMobile = true; // always single-column layout
+  const note = isMobile
+    ? 'Phân tích chi tiết hiển thị đầy đủ bên dưới'
+    : 'Nhấn vào tín hiệu để xem phân tích chiến lược';
+  document.getElementById('exec-sub').innerHTML =
+    (() => {
+      const n = META.signals_count || SIGNALS.length;
+      const totalRaw = META.total_raw_signals || n;
+      const label = SIGNALS.length === 0
+        ? (META.no_signal_note || "Không có tín hiệu rủi ro đáng kể trong 24h qua")
+        : totalRaw > 5
+          ? `Top ${n} tín hiệu quan trọng nhất hôm nay`
+          : `${n} tín hiệu quan trọng nhất hôm nay`;
+      return `<span class="exec-sub-main">${label}</span>`;
+    })() +
+    `<span class="exec-sub-note">${note}</span>`;
+  renderRRI();
+  renderList();
+  renderDeep(selectedId);
+}
+
+function renderRRI() {
+  const rri = calcRRI(SIGNALS);
+  const box = document.getElementById('rri-box');
+  document.getElementById('rri-score').textContent = rri.index.toFixed(1);
+  document.getElementById('rri-score').style.color = '#fff';
+  const pill = document.getElementById('rri-pill');
+  pill.textContent = rri.level.level;
+  pill.style.background = 'rgba(255,255,255,0.2)';
+  pill.style.color = '#fff';
+  document.getElementById('rri-box').style.background = rri.level.color;
+}
+
+function buildDeepHTML(s) {
+  const d = DEEP[s.id];
+  if (!d) return '';
+  const rs = calcRiskScore(s), rl = getRiskLevel(rs);
+  return `
+  <div class="deep-panel mobile-inline-deep">
+    <div class="deep-id">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+        <span class="mobile-signal-rank" style="color:${rl.color}">#${s.rank}</span>
+        <span style="font-size:11px;color:rgba(0,0,0,0.62);font-weight:600">${s.icon} ${s.category_short}</span>
+        <span class="severity-pill" style="background:${rl.color};margin-left:auto">${rl.level}</span>
+      </div>
+      <div class="deep-headline">${s.headline}</div>
+      <div class="deep-meta">
+        <span class="deep-sources">${renderSources(s,"deep-source")}</span>
+      </div>
+    </div>
+    <div class="deep-body">
+      <div style="padding-top:16px">
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#d4af37"></div>
+          <span class="section-title" style="color:#b8860b">THÔNG TIN CHI TIẾT</span>
+        </div>
+        <div class="detail-paragraphs">${d.detail.map(p=>`<p class="detail-para">${p}</p>`).join('')}</div>
+      </div>
+      <div class="divider"></div>
+      <div>
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#f4a261"></div>
+          <span class="section-title" style="color:#e07b30">TÁC ĐỘNG ĐẾN SAIGON CO.OP</span>
+        </div>
+        <div class="impact-items">
+          ${d.impact.map(item => {
+            const st = IMPACT_STYLE[item.dir];
+            return `<div class="impact-item" style="background:${st.bg};border:1px solid ${st.border};border-left:3px solid ${st.color}">
+              <div class="impact-area-row">
+                <span class="impact-icon" style="color:${st.color}">${st.icon}</span>
+                <span class="impact-area" style="color:${st.color}">${item.area.toUpperCase()}</span>
+              </div>
+              <p class="impact-text">${item.text}</p>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderList() {
+  const isMobile = true; // always single-column layout
+  const list = document.getElementById('signal-list');
+
+  // Signal rows (all devices)
+  const rowsHTML = SIGNALS.map(s => {
+    const rs = calcRiskScore(s), rl = getRiskLevel(rs), d = DIR_META[s.direction];
+    const isActive = s.id === selectedId && !isMobile;
+    return `
+    <div class="signal-row${isActive?' active':''}" data-id="${s.id}" style="border-left-color:${isActive?'#d4af37':rl.color}">
+      <div class="row-top">
+        <span class="row-rank" style="color:${rl.color}">#${s.rank}</span>
+        <span class="row-cat">${s.icon} ${s.category_short}</span>
+        <span class="severity-pill" style="background:${rl.color}">${rl.level}</span>
+        ${isActive?`<span class="row-active-hint" style="margin-left:8px">›› phân tích sâu</span>`:''}
+      </div>
+      <div class="row-headline${isActive?' active':''}">${s.headline}</div>
+      <div class="row-summary">${s.summary}</div>
+      <div class="row-footer">
+        <span class="row-metric" style="color:${d.color}">${d.icon} ${s.key_metric}</span>
+        <span class="row-sources">${renderSources(s,"row-source")}</span>
+      </div>
+      <div class="impact-bar-wrap" style="display:none"></div>
+    </div>`;
+  }).join('');
+
+  // Mobile: append "PHÂN TÍCH CHI TIẾT" section after all rows
+  let mobileDeepHTML = '';
+  if (isMobile) {
+    mobileDeepHTML = `
+    <div class="mobile-deep-section">
+      <div class="mobile-deep-header">PHÂN TÍCH CHI TIẾT</div>
+      ${SIGNALS.map(s => buildDeepHTML(s)).join('')}
+    </div>`;
+  }
+
+  list.innerHTML = rowsHTML + mobileDeepHTML;
+}
+
+function renderDeep(id) {
+  const s = SIGNALS.find(x => x.id === id);
+  const d = DEEP[id];
+  if (!s || !d) return;
+  const rs = calcRiskScore(s), rl = getRiskLevel(rs);
+  const container = document.getElementById('deep-panel-container');
+  container.innerHTML = `
+  <div class="deep-panel">
+    <div class="deep-id">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:800;color:${rl.color}">#${s.rank}</span>
+        <span class="deep-category" style="margin-bottom:0">${s.icon} ${s.category}</span>
+        <span class="severity-pill" style="background:${rl.color};margin-left:auto">${rl.level}</span>
+      </div>
+      <div class="deep-headline">${s.headline}</div>
+      <div class="deep-meta">
+        <span class="deep-sources">${renderSources(s,"deep-source")}</span>
+      </div>
+    </div>
+    <div class="deep-body">
+      <div style="padding-top:20px">
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#d4af37"></div>
+          <span class="section-title" style="color:#b8860b">THÔNG TIN CHI TIẾT</span>
+        </div>
+        <div class="detail-paragraphs">${d.detail.map(p=>`<p class="detail-para">${p}</p>`).join('')}</div>
+      </div>
+      <div class="divider"></div>
+      <div>
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#f4a261"></div>
+          <span class="section-title" style="color:#e07b30">TÁC ĐỘNG ĐẾN SAIGON CO.OP</span>
+        </div>
+        <div class="impact-items">
+          ${d.impact.map(item => {
+            const st = IMPACT_STYLE[item.dir];
+            return `<div class="impact-item" style="background:${st.bg};border:1px solid ${st.border};border-left:3px solid ${st.color}">
+              <div class="impact-area-row">
+                <span class="impact-icon" style="color:${st.color}">${st.icon}</span>
+                <span class="impact-area" style="color:${st.color}">${item.area.toUpperCase()}</span>
+              </div>
+              <p class="impact-text">${item.text}</p>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+init();
+</script>
+</body>
+</html>
