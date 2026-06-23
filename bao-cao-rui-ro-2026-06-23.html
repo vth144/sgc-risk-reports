@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Báo Cáo Rủi Ro Thị Trường Hàng Ngày</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;600;700;800&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'IBM Plex Sans', sans-serif; background: #f5f5f3; color: #2d2d2d; }
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+  .header {
+    display: flex; align-items: center; gap: 16; padding: 0 20px;
+    height: 50px; min-height: 50px; border-bottom: 1px solid rgba(0,0,0,0.08);
+    background: #fff; flex-shrink: 0; gap: 16px;
+  }
+  .header-title { font-size: 16px; font-weight: 800; letter-spacing: 0.06em; color: #1a1a1a; flex-shrink: 0; }
+  .header-divider { width: 1px; height: 20px; background: rgba(0,0,0,0.1); flex-shrink: 0; }
+  .header-date { font-size: 13px; color: rgba(0,0,0,0.6); white-space: nowrap; }
+
+  .body { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+
+  /* LEFT */
+  .col-left { display: flex; flex-direction: column; }
+
+  /* RRI */
+  .rri-box { background: #888; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .rri-label { font-size: 15px; font-weight: 800; letter-spacing: 0.1em; color: rgba(255,255,255,0.95); margin-bottom: 6px; }
+  .rri-score { font-family: 'IBM Plex Mono', monospace; font-size: 44px; font-weight: 900; line-height: 1; color: #fff; }
+  .rri-denom { font-size: 16px; color: rgba(255,255,255,0.6); margin-left: 8px; }
+  .rri-pill { font-size: 15px; font-weight: 800; letter-spacing: 0.06em; color: #fff; border-radius: 5px; padding: 7px 18px; white-space: nowrap; background: rgba(255,255,255,0.2); }
+
+  .exec-header { padding: 9px 18px; border-bottom: 1px solid rgba(0,0,0,0.07); background: #1a3a6b; flex-shrink: 0; }
+  .exec-label { font-size: 15px; letter-spacing: 0.1em; color: #fff; font-weight: 800; margin-bottom: 5px; }
+  .exec-sub-main { font-size: 14px; font-weight: 700; color: #fff; display: block; margin-bottom: 3px; }
+  .exec-sub-note { font-size: 11px; font-weight: 400; color: rgba(255,255,255,0.6); display: block; }
+
+  /* SIGNAL ROW */
+  .signal-row {
+    padding: 15px 18px; cursor: default;
+    border-bottom: 2px solid rgba(0,0,0,0.15);
+    border-left: 3px solid transparent;
+    background: #fff; transition: background 0.15s;
+  }
+  .signal-row:hover { background: #fff; }
+  .signal-row.active { background: rgba(212,175,55,0.08); border-left-color: #d4af37 !important; }
+  .row-top { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; flex-wrap: wrap; }
+  .row-rank { font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 800; }
+  .row-cat { font-size: 12px; color: rgba(0,0,0,0.65); letter-spacing: 0.05em; font-weight: 600; }
+  .row-active-hint { margin-left: auto; font-size: 11px; color: #b8860b; }
+  .severity-pill { display: inline-block; font-size: 14px; font-weight: 800; letter-spacing: 0.06em; color: #fff; border-radius: 4px; padding: 4px 11px; margin-left: auto; }
+  .row-headline { font-size: 16px; font-weight: 700; line-height: 1.45; margin-bottom: 8px; color: #111; }
+  .row-headline.active { color: #000; }
+  .row-summary { font-size: 14px; color: rgba(0,0,0,0.78); line-height: 1.65; margin-bottom: 10px; }
+  .row-footer { display: flex; align-items: center; justify-content: space-between; }
+  .row-metric { font-size: 14px; font-weight: 700; }
+  .row-source { font-size: 12px; color: rgba(0,0,0,0.4); }
+  .row-source-link {
+    font-size: 11px; color: #0005CB; text-decoration: none;
+    border-bottom: 1px solid rgba(0,5,203,0.3);
+    transition: border-color 0.15s;
+  }
+  .row-source-link:hover { border-bottom-color: #0005CB; }
+  .deep-source { font-size: 11px; color: rgba(0,0,0,0.4); }
+  .deep-source-link {
+    font-size: 11px; color: #0005CB; text-decoration: none;
+    border-bottom: 1px solid rgba(0,5,203,0.3);
+    transition: border-color 0.15s;
+  }
+  .deep-source-link:hover { border-bottom-color: #0005CB; }
+
+  /* FOOTER */
+  .col-footer { margin-top: auto; padding: 10px 18px; border-top: 1px solid rgba(0,0,0,0.07); font-size: 10px; color: rgba(0,0,0,0.35); }
+  .col-footer strong { color: rgba(0,0,0,0.5); }
+
+  /* RIGHT */
+  .col-right { display: none; }
+  .right-header { padding: 9px 22px 8px; border-bottom: 1px solid rgba(0,0,0,0.07); background: #fff; flex-shrink: 0; font-size: 11px; font-weight: 700; color: rgba(0,0,0,0.45); letter-spacing: 0.05em; }
+  .right-empty { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; color: rgba(0,0,0,0.25); }
+
+  /* DEEP PANEL */
+  .deep-panel { flex: 1; display: flex; flex-direction: column; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .deep-id { padding: 16px 22px 14px; border-bottom: 1px solid rgba(0,0,0,0.07); }
+  .deep-category { font-size: 11px; letter-spacing: 0.1em; color: #b8860b; font-weight: 800; margin-bottom: 7px; }
+  .deep-headline { font-size: 16px; font-weight: 800; color: #1a1a1a; line-height: 1.45; margin-bottom: 8px; }
+  .deep-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .deep-source { font-size: 11px; color: rgba(0,0,0,0.4); }
+  .deep-body { padding: 0 22px 28px; display: flex; flex-direction: column; gap: 22px; }
+  .section-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .section-bar { width: 2px; height: 14px; border-radius: 1px; flex-shrink: 0; }
+  .section-title { font-size: 14px; font-weight: 800; letter-spacing: 0.08em; }
+  .divider { height: 1px; background: rgba(0,0,0,0.08); }
+  .detail-paragraphs { display: flex; flex-direction: column; gap: 11px; }
+  .detail-para { font-size: 15px; color: rgba(0,0,0,0.78); line-height: 1.75; }
+  .impact-items { display: flex; flex-direction: column; gap: 9px; }
+  .impact-item { border-radius: 0 7px 7px 0; padding: 11px 14px; border-left-width: 3px; border-left-style: solid; }
+  .impact-area-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+  .impact-icon { font-size: 12px; font-weight: 800; }
+  .impact-area { font-size: 13px; font-weight: 800; letter-spacing: 0.06em; }
+  .impact-text { font-size: 15px; color: rgba(0,0,0,0.78); line-height: 1.72; }
+
+  /* ── MOBILE RESPONSIVE ── */
+  /* Deep section — always shown */
+  .mobile-deep-section { background: #f5f5f3; }
+  .mobile-deep-header {
+    padding: 12px 18px 10px;
+    font-size: 12px; font-weight: 800; letter-spacing: 0.1em;
+    color: #fff; background: #1a3a6b;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+  }
+  .mobile-inline-deep {
+    border-bottom: 3px solid rgba(0,0,0,0.15);
+    background: #fff;
+  }
+  .mobile-inline-deep .deep-id { padding: 14px 18px 12px; background: #fff; }
+  .mobile-inline-deep .deep-body { padding: 0 18px 20px; }
+  .mobile-signal-rank {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; font-weight: 800;
+    letter-spacing: 0.06em;
+  }
+  .col-footer { border-top: 1px solid rgba(0,0,0,0.07); }
+  @media (max-width: 480px) {
+    .header-title { font-size: 11px; letter-spacing: 0.03em; }
+    .header { height: auto; padding: 10px 14px; flex-wrap: wrap; }
+    .header-divider { display: none; }
+    .deep-body { padding: 0 14px 20px; }
+    .deep-id, .mobile-inline-deep .deep-id { padding: 12px 14px; }
+    .signal-row { padding: 12px 14px; }
+    .rri-box { padding: 12px 14px; }
+    .exec-header { padding: 8px 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-title">BÁO CÁO RỦI RO THỊ TRƯỜNG HÀNG NGÀY</div>
+    <div class="header-divider"></div>
+    <div class="header-date" id="header-date"></div>
+  </header>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- LEFT -->
+    <div class="col-left">
+      <!-- RRI -->
+      <div class="rri-box" id="rri-box">
+        <div>
+          <div class="rri-label">ĐIỂM RỦI RO</div>
+          <div style="display:flex;align-items:baseline">
+            <span class="rri-score" id="rri-score">—</span>
+            <span class="rri-denom">/ 100</span>
+          </div>
+        </div>
+        <span class="rri-pill" id="rri-pill">—</span>
+      </div>
+
+      <!-- EXECUTIVE SUMMARY -->
+      <div class="exec-header">
+        <div class="exec-label">NỘI DUNG CHÍNH</div>
+        <div id="exec-sub"></div>
+      </div>
+
+      <!-- SIGNAL LIST -->
+      <div id="signal-list"></div>
+
+      <!-- FOOTER -->
+      <div class="col-footer">
+        <strong>Thực hiện:</strong> Thanh Hải và Hồng Quang (Phòng Tài chính - Kế hoạch)
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col-right">
+      <div class="right-header">THÔNG TIN CHI TIẾT &amp; TÁC ĐỘNG — Nhấn vào tín hiệu bên trái để xem</div>
+      <div id="deep-panel-container" style="flex:1;display:flex;flex-direction:column">
+        <div class="right-empty">Chọn một tín hiệu để xem phân tích</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+const META = {
+  date: "Thứ Ba, 23/06/2026",
+  scanned_at: "13:00 CH",
+  signals_count: null, // null = dùng SIGNALS.length, set số nếu ít hơn 5
+  no_signal_note: null, // ghi chú khi không có tín hiệu
+};
+
+const SIGNALS = [
+  { id:2, rank:1, scores:{revenue:1,cost:2,scope:4,duration:2}, category:"Chuỗi cung ứng - Logistics", category_short:"LOGISTICS", icon:"🚚",
+    headline:"Giá xăng dầu trong nước chạm đáy nhiều tháng, giảm áp lực chi phí vận tải",
+    summary:"Sau kỳ điều hành liên Bộ Công Thương - Tài chính chiều 18/6, giá xăng E10 RON 95-III còn 20.750 đồng/lít, dầu DO 0,05S-II giảm mạnh nhất còn 23.530 đồng/lít. So với chu kỳ 11/6, xăng giảm khoảng 1.300 đồng/lít, dầu diesel giảm tới 2.340 đồng/lít, đưa giá nhiên liệu xuống mức thấp nhất nhiều tháng qua, trực tiếp hạ chi phí vận chuyển cho toàn hệ thống.",
+    direction:"positive", key_metric:"Xăng 20.750 đ/lít, thấp nhất nhiều tháng", sources:[{name:"Techz",url:"https://www.techz.vn/210-626-5-gia-xang-dau-hom-nay-trua-23-6-xang-e10-cham-day-sau-dau-diesel-re-nhat-khu-vuc-ylt697964.html"}] },
+  { id:3, rank:2, scores:{revenue:1,cost:1,scope:2,duration:1}, category:"Thiên tai & Khí hậu", category_short:"THEO DÕI", icon:"🌀",
+    headline:"Siêu bão Mekkhala mạnh nhất 22 năm tại Tây Bắc Thái Bình Dương, không vào Biển Đông",
+    summary:"Siêu bão Mekkhala mạnh lên cấp 16, giật trên cấp 17 — cơn bão tháng 6 mạnh nhất trong 22 năm qua tại Tây Bắc Thái Bình Dương. Bão đang đổi hướng lên phía Bắc về Nhật Bản, không di chuyển vào Biển Đông. Một áp thấp nhiệt đới mới hình thành song song cũng được dự báo không ảnh hưởng đến Việt Nam.",
+    direction:"neutral", key_metric:"Cấp 16, không ảnh hưởng Việt Nam", sources:[{name:"Báo Dân trí",url:"https://dantri.com.vn/thoi-su/sieu-bao-mekkhala-vua-hinh-thanh-du-bao-sap-co-them-mot-con-bao-moi-20260623084421771.htm"}] },
+  { id:1, rank:3, scores:{revenue:2,cost:3,scope:2,duration:2}, category:"Giá hàng hóa", category_short:"GIÁ CẢ", icon:"📊",
+    headline:"Giá heo hơi miền Bắc bất ngờ tăng, nguồn cung Lâm Đồng bị siết",
+    summary:"Giá heo hơi tại nhiều tỉnh miền Bắc (Ninh Bình, Thái Nguyên, Tuyên Quang, Quảng Ninh, Hà Nội...) tăng lên 68.000 đồng/kg, trong khi miền Trung và miền Nam tiếp tục giảm. Nguyên nhân chính là nguồn cung tại Lâm Đồng bị thu hẹp do phải tiêu hủy đàn heo nhiễm tả châu Phi, khiến hộ chăn nuôi đẩy nhanh xuất chuồng.",
+    direction:"negative", key_metric:"68.000 đ/kg (miền Bắc, +1.000đ)", sources:[{name:"Thanh Niên",url:"https://thanhnien.vn/gia-heo-hoi-hom-nay-2362026-bat-ngo-tang-185260623064515064.htm"}] },
+];
+
+const DEEP = {
+  1: {
+    detail: [
+      "Thị trường heo hơi cả nước đang ghi nhận diễn biến phân hóa rõ rệt theo vùng miền. Trong khi miền Bắc bất ngờ tăng giá 1.000 đồng/kg tại nhiều tỉnh (Ninh Bình, Thái Nguyên, Tuyên Quang, Quảng Ninh) lên ngang mức 68.000 đồng/kg với Hà Nội, Bắc Ninh, Hải Phòng, Hưng Yên, thì miền Trung và miền Nam tiếp tục xu hướng giảm đã kéo dài khoảng một tháng qua.",
+      "Nguyên nhân chính được ghi nhận là việc phát hiện ổ dịch tả heo châu Phi (ASF) mới tại Lâm Đồng, buộc cơ quan chức năng tiêu hủy 3.700 con. Diễn biến này tạo tâm lý lo ngại trong giới chăn nuôi, dẫn đến xu hướng xuất chuồng sớm tại khu vực Nam Trung Bộ — góp phần gây áp lực giảm giá cục bộ tại đây trong khi miền Bắc lại tăng do nguồn cung không bị ảnh hưởng trực tiếp.",
+      "Tại khu vực miền Nam — vùng phục vụ trực tiếp cho hệ thống Saigon Co.op — giá heo hơi vẫn duy trì ở mức thấp (62.000–63.000 đồng/kg tại Đồng Nai, TP.HCM, Tây Ninh, An Giang, Đồng Tháp), và giá thịt lẻ tại chợ truyền thống, siêu thị khu vực TP.HCM chưa ghi nhận biến động đáng kể. Thời tiết thất thường được ghi nhận là yếu tố khuếch đại thêm áp lực lên sức khỏe đàn vật nuôi trong giai đoạn này.",
+    ],
+    impact: [
+      { area:"Nguồn cung thịt tươi khu vực Nam Bộ", dir:"neutral", text:"Vì ổ dịch ASF nằm tại Lâm Đồng và giá heo khu vực Nam Bộ — nơi đặt phần lớn điểm bán Co.opmart, Co.opFood, Co.opXtra — vẫn đang ở mức thấp và ổn định, áp lực nguồn cung thịt tươi cho hệ thống SGC hiện chưa rõ rệt. Cần tiếp tục theo dõi sát diễn biến dịch trong những ngày tới." },
+      { area:"Biên lợi nhuận ngành hàng thịt tươi", dir:"neutral", text:"Trong ngắn hạn, giá thu mua tại khu vực miền Nam chưa tăng nên chưa tạo áp lực nén biên lợi nhuận ngay tại ngành hàng thịt tươi của Co.opmart và Co.opFood. Tuy nhiên nếu dịch lan rộng, đây là điểm yếu cần chủ động ứng phó do Gross Margin ngành hàng tươi sống tại các chuỗi này vốn đã thấp hơn kỳ vọng." },
+      { area:"Theo dõi rủi ro lan rộng", dir:"negative", text:"Diễn biến dịch bệnh vật nuôi thường khó dự đoán về thời gian kiểm soát và có thể lan sang các tỉnh lân cận Lâm Đồng, bao gồm các vùng cung ứng cho thị trường TP.HCM. Đây là rủi ro cần theo dõi chủ động để kích hoạt sớm các nguồn cung thay thế nếu cần." },
+    ],
+  },
+  2: {
+    detail: [
+      "Sau kỳ điều hành giá của liên Bộ Công Thương - Tài chính áp dụng từ chiều 18/6, giá bán lẻ xăng dầu trong nước tiếp tục neo ở mặt bằng thấp nhất trong nhiều tháng. Xăng E10 RON 95-III tại hệ thống PVOIL còn 20.750 đồng/lít, xăng E5 RON 92-II còn 20.120 đồng/lít — mức thấp nhất trong nhóm xăng tại hệ thống này.",
+      "Đà giảm diễn ra mạnh hơn ở nhóm dầu diesel: dầu DO 0,05S-II giảm tới 2.340 đồng/lít so với chu kỳ 11/6, hiện còn 23.530 đồng/lít — mức giảm sâu nhất trong các mặt hàng được khảo sát. Xu hướng giảm đồng loạt này phần lớn phản ánh diễn biến hạ nhiệt của giá dầu thế giới.",
+      "Xu hướng giá xăng dầu trong nước thời gian tới vẫn phụ thuộc lớn vào biến động thị trường năng lượng thế giới, nên mặt bằng giá thấp hiện tại được xem là yếu tố thuận lợi ngắn hạn hơn là một xu hướng đã được xác lập chắc chắn.",
+    ],
+    impact: [
+      { area:"Chi phí logistics & vận chuyển", dir:"positive", text:"Giá dầu diesel giảm sâu trực tiếp giảm áp lực chi phí vận tải cho hệ thống logistics nội bộ của Saigon Co.op, bao gồm vận chuyển hàng hóa giữa kho và các điểm bán trên toàn quốc — một trong những điểm mạnh về hạ tầng nội bộ của SGC." },
+      { area:"Chi phí vận hành chuỗi", dir:"positive", text:"Chi phí nhiên liệu thấp hơn hỗ trợ kiểm soát chi phí vận hành chung trong ngắn hạn, đặc biệt với chuỗi có mạng lưới điểm bán rộng khắp toàn quốc như Co.opmart, vốn đang chịu áp lực Gross Margin thấp hơn kỳ vọng." },
+      { area:"Rủi ro đảo chiều", dir:"neutral", text:"Vì giá xăng dầu nội địa phụ thuộc lớn vào giá thế giới, lợi thế chi phí hiện tại có thể không bền vững nếu thị trường năng lượng quốc tế biến động tăng trở lại trong các kỳ điều hành tiếp theo." },
+    ],
+  },
+  3: {
+    detail: [
+      "Siêu bão Mekkhala đã mạnh lên cấp 16, giật trên cấp 17 — được cơ quan khí tượng ghi nhận là cơn bão tháng 6 mạnh nhất trong vòng 22 năm qua tại khu vực Tây Bắc Thái Bình Dương. Tại thời điểm 4h sáng 23/6, tâm bão đang ở phía Đông đảo Luzon (Philippines).",
+      "Theo dự báo của cơ quan khí tượng, bão đang đổi hướng di chuyển lên phía Bắc, đi dọc vùng biển phía Đông Philippines hướng về đảo Okinawa và miền Nam Nhật Bản, sau đó tiếp tục đổi hướng Đông Bắc và suy yếu dần. Một áp thấp nhiệt đới mới hình thành song song cũng được dự báo di chuyển theo hướng tương tự, không đi vào Biển Đông.",
+      "Cả hai hình thái này hiện đều được cơ quan khí tượng xác nhận không có khả năng ảnh hưởng trực tiếp đến đất liền Việt Nam. Đây được ghi nhận như một tín hiệu mang tính theo dõi trong bối cảnh mùa mưa bão 2026 được dự báo có số cơn ít hơn trung bình nhiều năm do ảnh hưởng El Nino, nhưng vẫn cần đề phòng các cơn bão mạnh, quỹ đạo phức tạp có thể xuất hiện bất ngờ trong giai đoạn tháng 7-9.",
+    ],
+    impact: [
+      { area:"Tác động trực tiếp hiện tại", dir:"neutral", text:"Hiện chưa có tác động trực tiếp nào đến hoạt động bán lẻ, chuỗi cung ứng hay vận chuyển của Saigon Co.op, do cả siêu bão Mekkhala và áp thấp nhiệt đới mới đều được xác nhận không di chuyển vào Biển Đông hay ảnh hưởng đất liền Việt Nam." },
+      { area:"Giá trị theo dõi mùa vụ", dir:"neutral", text:"Tín hiệu này được ghi nhận như một điểm mốc tham khảo cho mùa mưa bão 2026 — cường độ bất thường của cơn bão này (mạnh nhất 22 năm trong tháng 6) là cơ sở để SGC duy trì theo dõi sát các bản tin khí tượng trong giai đoạn cao điểm tháng 7-9, đặc biệt với rủi ro thiên tai có thể ảnh hưởng logistics và chuỗi cung ứng thực phẩm tươi sống theo SWOT của SGC." },
+    ],
+  },
+};
+
+// ─── ENGINE ───────────────────────────────────────────────────────────────────
+const RISK_TYPES = {
+  logistics:        { id:"logistics",        severity:"critical" },
+  demand:           { id:"demand",           severity:"high"     },
+  supply:           { id:"supply",           severity:"medium"   },
+  policy:           { id:"policy",           severity:"low"      },
+  natural_disaster: { id:"natural_disaster", severity:"critical" },
+};
+const SEV_ORDER = { critical:4, high:3, medium:2, low:1 };
+
+function classifyRisks(s) {
+  const t = [s.headline, s.summary, s.category].join(" ").toLowerCase();
+  const m = [];
+  if (/logistics|giao hàng|vận chuyển|kho|last.mile/.test(t)) m.push("logistics");
+  if (/nhu cầu|tiêu dùng|hành vi|online|mua sắm|bỏ giỏ|thị phần|demand|bất động sản|giá thuê|mặt bằng|lấp đầy|tỷ giá|cpi|lạm phát|sức mua|gdp/.test(t)) m.push("demand");
+  if (/nguồn cung|nhà cung cấp|supply|tồn kho|khan hiếm|thiếu hàng|nguyên liệu/.test(t)) m.push("supply");
+  if (/nghị định|chính sách|quy định|pháp lý|thuế|chính phủ|policy|luật|hiệu lực/.test(t)) m.push("policy");
+  if (/dịch|bệnh|asf|thiên tai|lũ|bão|hạn hán|khí hậu|thời tiết/.test(t)) m.push("natural_disaster");
+  if (!m.length) m.push("demand");
+  return m;
+}
+function getDominantRisk(s) {
+  return classifyRisks(s).reduce((b, id) => SEV_ORDER[RISK_TYPES[id].severity] > SEV_ORDER[RISK_TYPES[b].severity] ? id : b);
+}
+function calcESS(s) {
+  const sc = s.scores || {};
+  const raw = ((sc.revenue||1)*0.35)+((sc.cost||1)*0.35)+((sc.scope||1)*0.15)+((sc.duration||1)*0.15);
+  return Math.round(raw*20*10)/10;
+}
+const RISK_BASE = { logistics:{base:76,min:76,max:100}, demand:{base:51,min:51,max:75}, supply:{base:26,min:26,max:50}, policy:{base:1,min:1,max:25}, natural_disaster:{base:76,min:76,max:100} };
+function calcRiskScore(s) {
+  const ess = calcESS(s), cfg = RISK_BASE[getDominantRisk(s)];
+  return Math.round(Math.min(cfg.max, Math.max(cfg.min, cfg.base + ess*0.24))*10)/10;
+}
+function getRiskLevel(score) {
+  if (score >= 76) return { level:"NGHIÊM TRỌNG", color:"#7f0000", bg:"rgba(127,0,0,0.08)", border:"rgba(127,0,0,0.2)" };
+  if (score >= 51) return { level:"CAO",          color:"#dc2626", bg:"rgba(220,38,38,0.08)",  border:"rgba(220,38,38,0.2)"  };
+  if (score >= 26) return { level:"TRUNG BÌNH",   color:"#d97706", bg:"rgba(217,119,6,0.09)",  border:"rgba(217,119,6,0.2)"  };
+  return               { level:"THẤP",         color:"#16a34a", bg:"rgba(22,163,74,0.08)",  border:"rgba(22,163,74,0.18)" };
+}
+function calcRRI(signals) {
+  if (!signals.length) return { index:0, level:getRiskLevel(0) };
+  const scores = signals.map(s => calcRiskScore(s));
+  const total = scores.reduce((sum,v) => sum+v, 0);
+  if (!total) return { index:0, level:getRiskLevel(0) };
+  const tierOf = v => v>=76?4 : v>=51?3 : v>=26?2 : 1;
+  const tiers = new Set(scores.map(tierOf));
+  let index;
+  if (tiers.size === 1) {
+    // Trường hợp 1: tất cả cùng 1 tier -> trung bình cộng
+    index = total / scores.length;
+  } else {
+    // Trường hợp 2: trải nhiều tier -> ngưỡng động ưu tiên 76 -> 51 -> 26 -> 1
+    const thresholds = [76,51,26,1];
+    let qualifying = [];
+    for (const th of thresholds) {
+      qualifying = scores.filter(v => v >= th);
+      if (qualifying.length) break;
+    }
+    const critSum = qualifying.reduce((sum,v) => sum+v, 0);
+    index = (critSum/total)*100;
+  }
+  index = Math.round(index*10)/10;
+  return { index, level: getRiskLevel(index) };
+}
+const DIR_META = { negative:{icon:"↓",color:"#dc2626"}, positive:{icon:"↑",color:"#16a34a"}, neutral:{icon:"→",color:"#8d99ae"} };
+
+function renderSources(s, cssClass) {
+  const srcs = s.sources || (s.source ? [{name: s.source, url: s.source_url||null}] : []);
+  return srcs.map(src =>
+    src.url
+      ? `<a class="${cssClass}-link" href="${src.url}" target="_blank" rel="noopener">${src.name} ↗</a>`
+      : `<span class="${cssClass}">${src.name}</span>`
+  ).join('<span style="color:rgba(0,0,0,0.25);margin:0 3px">·</span>');
+}
+const IMPACT_STYLE = {
+  negative:{ color:"#e63946", bg:"rgba(230,57,70,0.07)",    border:"rgba(230,57,70,0.18)",    icon:"↓" },
+  positive:{ color:"#2a9d8f", bg:"rgba(42,157,143,0.07)",   border:"rgba(42,157,143,0.18)",   icon:"↑" },
+  neutral: { color:"#8d99ae", bg:"rgba(141,153,174,0.07)",  border:"rgba(141,153,174,0.15)",  icon:"→" },
+};
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+let selectedId = SIGNALS[0].id;
+
+function init() {
+  document.getElementById('header-date').textContent = META.date + '  ·  Cập nhật lúc ' + META.scanned_at;
+  const isMobile = true; // always single-column layout
+  const note = isMobile
+    ? 'Phân tích chi tiết hiển thị đầy đủ bên dưới'
+    : 'Nhấn vào tín hiệu để xem phân tích chiến lược';
+  document.getElementById('exec-sub').innerHTML =
+    (() => {
+      const n = META.signals_count || SIGNALS.length;
+      const totalRaw = META.total_raw_signals || n;
+      const label = SIGNALS.length === 0
+        ? (META.no_signal_note || "Không có tín hiệu rủi ro đáng kể trong 24h qua")
+        : totalRaw > 5
+          ? `Top ${n} tín hiệu quan trọng nhất hôm nay`
+          : `${n} tín hiệu quan trọng nhất hôm nay`;
+      return `<span class="exec-sub-main">${label}</span>`;
+    })() +
+    `<span class="exec-sub-note">${note}</span>`;
+  renderRRI();
+  renderList();
+  renderDeep(selectedId);
+}
+
+function renderRRI() {
+  const rri = calcRRI(SIGNALS);
+  const box = document.getElementById('rri-box');
+  document.getElementById('rri-score').textContent = rri.index.toFixed(1);
+  document.getElementById('rri-score').style.color = '#fff';
+  const pill = document.getElementById('rri-pill');
+  pill.textContent = rri.level.level;
+  pill.style.background = 'rgba(255,255,255,0.2)';
+  pill.style.color = '#fff';
+  document.getElementById('rri-box').style.background = rri.level.color;
+}
+
+function buildDeepHTML(s) {
+  const d = DEEP[s.id];
+  if (!d) return '';
+  const rs = calcRiskScore(s), rl = getRiskLevel(rs);
+  return `
+  <div class="deep-panel mobile-inline-deep">
+    <div class="deep-id">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+        <span class="mobile-signal-rank" style="color:${rl.color}">#${s.rank}</span>
+        <span style="font-size:11px;color:rgba(0,0,0,0.62);font-weight:600">${s.icon} ${s.category_short}</span>
+        <span class="severity-pill" style="background:${rl.color};margin-left:auto">${rl.level}</span>
+      </div>
+      <div class="deep-headline">${s.headline}</div>
+      <div class="deep-meta">
+        <span class="deep-sources">${renderSources(s,"deep-source")}</span>
+      </div>
+    </div>
+    <div class="deep-body">
+      <div style="padding-top:16px">
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#d4af37"></div>
+          <span class="section-title" style="color:#b8860b">THÔNG TIN CHI TIẾT</span>
+        </div>
+        <div class="detail-paragraphs">${d.detail.map(p=>`<p class="detail-para">${p}</p>`).join('')}</div>
+      </div>
+      <div class="divider"></div>
+      <div>
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#f4a261"></div>
+          <span class="section-title" style="color:#e07b30">TÁC ĐỘNG ĐẾN SAIGON CO.OP</span>
+        </div>
+        <div class="impact-items">
+          ${d.impact.map(item => {
+            const st = IMPACT_STYLE[item.dir];
+            return `<div class="impact-item" style="background:${st.bg};border:1px solid ${st.border};border-left:3px solid ${st.color}">
+              <div class="impact-area-row">
+                <span class="impact-icon" style="color:${st.color}">${st.icon}</span>
+                <span class="impact-area" style="color:${st.color}">${item.area.toUpperCase()}</span>
+              </div>
+              <p class="impact-text">${item.text}</p>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderList() {
+  const isMobile = true; // always single-column layout
+  const list = document.getElementById('signal-list');
+
+  // Signal rows (all devices)
+  const rowsHTML = SIGNALS.map(s => {
+    const rs = calcRiskScore(s), rl = getRiskLevel(rs), d = DIR_META[s.direction];
+    const isActive = s.id === selectedId && !isMobile;
+    return `
+    <div class="signal-row${isActive?' active':''}" data-id="${s.id}" style="border-left-color:${isActive?'#d4af37':rl.color}">
+      <div class="row-top">
+        <span class="row-rank" style="color:${rl.color}">#${s.rank}</span>
+        <span class="row-cat">${s.icon} ${s.category_short}</span>
+        <span class="severity-pill" style="background:${rl.color}">${rl.level}</span>
+        ${isActive?`<span class="row-active-hint" style="margin-left:8px">›› phân tích sâu</span>`:''}
+      </div>
+      <div class="row-headline${isActive?' active':''}">${s.headline}</div>
+      <div class="row-summary">${s.summary}</div>
+      <div class="row-footer">
+        <span class="row-metric" style="color:${d.color}">${d.icon} ${s.key_metric}</span>
+        <span class="row-sources">${renderSources(s,"row-source")}</span>
+      </div>
+      <div class="impact-bar-wrap" style="display:none"></div>
+    </div>`;
+  }).join('');
+
+  // Mobile: append "PHÂN TÍCH CHI TIẾT" section after all rows
+  let mobileDeepHTML = '';
+  if (isMobile) {
+    mobileDeepHTML = `
+    <div class="mobile-deep-section">
+      <div class="mobile-deep-header">PHÂN TÍCH CHI TIẾT</div>
+      ${SIGNALS.map(s => buildDeepHTML(s)).join('')}
+    </div>`;
+  }
+
+  list.innerHTML = rowsHTML + mobileDeepHTML;
+
+
+}
+
+function renderDeep(id) {
+  const s = SIGNALS.find(x => x.id === id);
+  const d = DEEP[id];
+  if (!s || !d) return;
+  const rs = calcRiskScore(s), rl = getRiskLevel(rs);
+  const container = document.getElementById('deep-panel-container');
+  container.innerHTML = `
+  <div class="deep-panel">
+    <div class="deep-id">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:800;color:${rl.color}">#${s.rank}</span>
+        <span class="deep-category" style="margin-bottom:0">${s.icon} ${s.category}</span>
+        <span class="severity-pill" style="background:${rl.color};margin-left:auto">${rl.level}</span>
+      </div>
+      <div class="deep-headline">${s.headline}</div>
+      <div class="deep-meta">
+        <span class="deep-sources">${renderSources(s,"deep-source")}</span>
+      </div>
+    </div>
+    <div class="deep-body">
+      <div style="padding-top:20px">
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#d4af37"></div>
+          <span class="section-title" style="color:#b8860b">THÔNG TIN CHI TIẾT</span>
+        </div>
+        <div class="detail-paragraphs">${d.detail.map(p=>`<p class="detail-para">${p}</p>`).join('')}</div>
+      </div>
+      <div class="divider"></div>
+      <div>
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#f4a261"></div>
+          <span class="section-title" style="color:#e07b30">TÁC ĐỘNG ĐẾN SAIGON CO.OP</span>
+        </div>
+        <div class="impact-items">
+          ${d.impact.map(item => {
+            const st = IMPACT_STYLE[item.dir];
+            return `<div class="impact-item" style="background:${st.bg};border:1px solid ${st.border};border-left:3px solid ${st.color}">
+              <div class="impact-area-row">
+                <span class="impact-icon" style="color:${st.color}">${st.icon}</span>
+                <span class="impact-area" style="color:${st.color}">${item.area.toUpperCase()}</span>
+              </div>
+              <p class="impact-text">${item.text}</p>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+init();
+</script>
+</body>
+</html>
