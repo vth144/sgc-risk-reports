@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Báo Cáo Rủi Ro Thị Trường Hàng Ngày</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;600;700;800&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'IBM Plex Sans', sans-serif; background: #f5f5f3; color: #2d2d2d; }
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+  .header { display: flex; align-items: center; gap: 16px; padding: 0 20px; height: 50px; min-height: 50px; border-bottom: 1px solid rgba(0,0,0,0.08); background: #fff; flex-shrink: 0; }
+  .header-title { font-size: 16px; font-weight: 800; letter-spacing: 0.06em; color: #1a1a1a; flex-shrink: 0; }
+  .header-divider { width: 1px; height: 20px; background: rgba(0,0,0,0.1); flex-shrink: 0; }
+  .header-date { font-size: 13px; color: rgba(0,0,0,0.6); white-space: nowrap; }
+  .body { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+  .col-left { display: flex; flex-direction: column; }
+  .rri-box { background: #888; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .rri-label { font-size: 15px; font-weight: 800; letter-spacing: 0.1em; color: rgba(255,255,255,0.95); margin-bottom: 6px; }
+  .rri-score { font-family: 'IBM Plex Mono', monospace; font-size: 44px; font-weight: 900; line-height: 1; color: #fff; }
+  .rri-denom { font-size: 16px; color: rgba(255,255,255,0.6); margin-left: 8px; }
+  .rri-pill { font-size: 15px; font-weight: 800; letter-spacing: 0.06em; color: #fff; border-radius: 5px; padding: 7px 18px; white-space: nowrap; background: rgba(255,255,255,0.2); }
+  .exec-header { padding: 9px 18px; border-bottom: 1px solid rgba(0,0,0,0.07); background: #1a3a6b; flex-shrink: 0; }
+  .exec-label { font-size: 15px; letter-spacing: 0.1em; color: #fff; font-weight: 800; margin-bottom: 5px; }
+  .exec-sub-main { font-size: 14px; font-weight: 700; color: #fff; display: block; margin-bottom: 3px; }
+  .exec-sub-note { font-size: 11px; font-weight: 400; color: rgba(255,255,255,0.6); display: block; }
+  .signal-row { padding: 15px 18px; cursor: default; border-bottom: 2px solid rgba(0,0,0,0.15); border-left: 3px solid transparent; background: #fff; transition: background 0.15s; }
+  .signal-row.active { background: rgba(212,175,55,0.08); border-left-color: #d4af37 !important; }
+  .row-top { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; flex-wrap: wrap; }
+  .row-rank { font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 800; }
+  .row-cat { font-size: 12px; color: rgba(0,0,0,0.65); letter-spacing: 0.05em; font-weight: 600; }
+  .severity-pill { display: inline-block; font-size: 14px; font-weight: 800; letter-spacing: 0.06em; color: #fff; border-radius: 4px; padding: 4px 11px; margin-left: auto; }
+  .row-headline { font-size: 16px; font-weight: 700; line-height: 1.45; margin-bottom: 8px; color: #111; }
+  .row-summary { font-size: 14px; color: rgba(0,0,0,0.78); line-height: 1.65; margin-bottom: 10px; }
+  .row-footer { display: flex; align-items: center; justify-content: space-between; }
+  .row-metric { font-size: 14px; font-weight: 700; }
+  .row-source-link { font-size: 11px; color: #0005CB; text-decoration: none; border-bottom: 1px solid rgba(0,5,203,0.3); transition: border-color 0.15s; }
+  .row-source-link:hover { border-bottom-color: #0005CB; }
+  .deep-source { font-size: 11px; color: rgba(0,0,0,0.4); }
+  .deep-source-link { font-size: 11px; color: #0005CB; text-decoration: none; border-bottom: 1px solid rgba(0,5,203,0.3); }
+  .col-footer { margin-top: auto; padding: 10px 18px; border-top: 1px solid rgba(0,0,0,0.07); font-size: 10px; color: rgba(0,0,0,0.35); }
+  .col-footer strong { color: rgba(0,0,0,0.5); }
+  .col-right { display: none; }
+  .deep-panel { flex: 1; display: flex; flex-direction: column; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .deep-id { padding: 16px 22px 14px; border-bottom: 1px solid rgba(0,0,0,0.07); }
+  .deep-category { font-size: 11px; letter-spacing: 0.1em; color: #b8860b; font-weight: 800; margin-bottom: 7px; }
+  .deep-headline { font-size: 16px; font-weight: 800; color: #1a1a1a; line-height: 1.45; margin-bottom: 8px; }
+  .deep-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .deep-body { padding: 0 22px 28px; display: flex; flex-direction: column; gap: 22px; }
+  .section-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .section-bar { width: 2px; height: 14px; border-radius: 1px; flex-shrink: 0; }
+  .section-title { font-size: 14px; font-weight: 800; letter-spacing: 0.08em; }
+  .divider { height: 1px; background: rgba(0,0,0,0.08); }
+  .detail-paragraphs { display: flex; flex-direction: column; gap: 11px; }
+  .detail-para { font-size: 15px; color: rgba(0,0,0,0.78); line-height: 1.75; }
+  .impact-items { display: flex; flex-direction: column; gap: 9px; }
+  .impact-item { border-radius: 0 7px 7px 0; padding: 11px 14px; border-left-width: 3px; border-left-style: solid; }
+  .impact-area-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+  .impact-icon { font-size: 12px; font-weight: 800; }
+  .impact-area { font-size: 13px; font-weight: 800; letter-spacing: 0.06em; }
+  .impact-text { font-size: 15px; color: rgba(0,0,0,0.78); line-height: 1.72; }
+  .mobile-deep-section { background: #f5f5f3; }
+  .mobile-deep-header { padding: 12px 18px 10px; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: #fff; background: #1a3a6b; border-bottom: 1px solid rgba(0,0,0,0.1); }
+  .mobile-inline-deep { border-bottom: 3px solid rgba(0,0,0,0.15); background: #fff; }
+  .mobile-inline-deep .deep-id { padding: 14px 18px 12px; background: #fff; }
+  .mobile-inline-deep .deep-body { padding: 0 18px 20px; }
+  .mobile-signal-rank { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; }
+  @media (max-width: 480px) {
+    .header-title { font-size: 11px; letter-spacing: 0.03em; }
+    .header { height: auto; padding: 10px 14px; flex-wrap: wrap; }
+    .header-divider { display: none; }
+    .deep-body { padding: 0 14px 20px; }
+    .deep-id, .mobile-inline-deep .deep-id { padding: 12px 14px; }
+    .signal-row { padding: 12px 14px; }
+    .rri-box { padding: 12px 14px; }
+    .exec-header { padding: 8px 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="header-title">BÁO CÁO RỦI RO THỊ TRƯỜNG HÀNG NGÀY</div>
+    <div class="header-divider"></div>
+    <div class="header-date" id="header-date"></div>
+  </header>
+  <div class="body">
+    <div class="col-left">
+      <div class="rri-box" id="rri-box">
+        <div>
+          <div class="rri-label">ĐIỂM RỦI RO</div>
+          <div style="display:flex;align-items:baseline">
+            <span class="rri-score" id="rri-score">—</span>
+            <span class="rri-denom">/ 100</span>
+          </div>
+        </div>
+        <span class="rri-pill" id="rri-pill">—</span>
+      </div>
+      <div class="exec-header">
+        <div class="exec-label">NỘI DUNG CHÍNH</div>
+        <div id="exec-sub"></div>
+      </div>
+      <div id="signal-list"></div>
+      <div class="col-footer">
+        <strong>Thực hiện:</strong> Thanh Hải - Hồng Quang (Phòng Tài chính - Kế hoạch)
+      </div>
+    </div>
+    <div class="col-right">
+      <div style="padding:9px 22px 8px;border-bottom:1px solid rgba(0,0,0,0.07);background:#fff;font-size:11px;font-weight:700;color:rgba(0,0,0,0.45);letter-spacing:0.05em;">THÔNG TIN CHI TIẾT &amp; TÁC ĐỘNG</div>
+      <div id="deep-panel-container" style="flex:1;display:flex;flex-direction:column">
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:12px;color:rgba(0,0,0,0.25);">Chọn một tín hiệu để xem phân tích</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const META = {
+  date: "Thứ Ba, 30/06/2026",
+  scanned_at: "08:00 SA",
+  signals_count: null,
+  no_signal_note: null,
+};
+
+const SIGNALS = [
+  { id:1, rank:1, scores:{revenue:2,cost:2,scope:3,duration:2}, category:"Thiên Tai & Khí Hậu", category_short:"THIÊN TAI", icon:"🌧️",
+    headline:"Mưa lũ diện rộng Bắc Bộ, cảnh báo áp thấp nhiệt đới Biển Đông",
+    summary:"Từ đêm 29/6 đến ngày 1/7, Bắc Bộ và Thanh Hóa mưa to diện rộng với lượng mưa cục bộ vượt 300mm, lũ trên các sông dâng 2-4m, nguy cơ cao lũ quét và sạt lở đất tại nhiều tỉnh miền núi. Trung tâm Dự báo Khí tượng Thủy văn Quốc gia đồng thời cảnh báo khả năng hình thành áp thấp nhiệt đới trên Biển Đông trong tuần 29/6-5/7.",
+    direction:"negative", key_metric:"Mưa cục bộ >300mm, lũ dâng 2-4m",
+    sources:[{name:"Nhân Dân",url:"https://nhandan.vn/canh-bao-mua-lon-o-khu-vuc-bac-bo-thanh-hoa-va-canh-bao-lu-tren-cac-song-khu-vuc-bac-bo-post972163.html"},{name:"Nhân Dân (áp thấp)",url:"https://nhandan.vn/mua-dong-tren-dien-rong-canh-bao-nguy-co-lu-quet-va-ap-thap-nhiet-doi-tren-bien-dong-post972050.html"}] },
+  { id:2, rank:2, scores:{revenue:3,cost:2,scope:5,duration:5}, category:"Kinh Tế Vĩ Mô", category_short:"VĨ MÔ", icon:"💰",
+    headline:"Lương cơ sở tăng 8% từ 1/7, lên 2.530.000 đồng/tháng",
+    summary:"Nghị định 161/2026/NĐ-CP chính thức có hiệu lực từ ngày 1/7/2026, nâng lương cơ sở từ 2.340.000 lên 2.530.000 đồng/tháng cho toàn bộ cán bộ, công chức, viên chức và lực lượng vũ trang. Lương hưu và trợ cấp BHXH cũng tăng thêm 8% — đây là lần điều chỉnh lương cơ sở đầu tiên kể từ tháng 7/2024.",
+    direction:"positive", key_metric:"Tăng 8% (190.000 đ/tháng) từ 1/7/2026",
+    sources:[{name:"Tuổi Trẻ",url:"https://tuoitre.vn/lich-chi-tra-luong-huu-tro-cap-bao-hiem-xa-hoi-moi-trong-thang-7-2026-100260628193429554.htm"}] },
+  { id:4, rank:3, scores:{revenue:1,cost:1,scope:3,duration:5}, category:"Kinh Tế Vĩ Mô", category_short:"VĨ MÔ", icon:"🏢",
+    headline:"Hà Nội thí điểm phát triển nhà ở cho thuê quy mô lớn, nhân rộng cả nước",
+    summary:"Thủ tướng chỉ đạo Hà Nội đi đầu phát triển nhà ở cho thuê với 3 dự án khởi công (Pháp Vân-Tứ Hiệp, Việt Hưng, Him Lam Long Biên), tổng quy mô hàng nghìn căn hộ. Bộ Xây dựng yêu cầu các địa phương khởi công ít nhất 1 dự án vốn ngân sách trong tháng 6/2026 và xây kế hoạch phát triển giai đoạn 2026-2030.",
+    direction:"neutral", key_metric:"3 dự án khởi công, hơn 8.300 căn hộ",
+    sources:[{name:"VTV",url:"https://vtv.vn/phat-trien-nha-o-cho-thue-thi-truong-bat-dong-san-se-thay-doi-ra-sao-100260622152200104.htm"}] },
+  { id:3, rank:4, scores:{revenue:2,cost:2,scope:3,duration:4}, category:"Chuỗi Cung Ứng", category_short:"NGUỒN CUNG", icon:"🌳",
+    headline:"Vỡ quy hoạch vùng nguyên liệu sầu riêng, liên kết chuỗi lỏng lẻo",
+    summary:"Diện tích sầu riêng tại Đồng Tháp đã vượt quy hoạch 2030 (33.000ha so với mục tiêu 32.000ha) và vẫn tăng 2.000-2.500ha/năm, trong khi hơn một nửa diện tích chưa được cấp mã số vùng trồng. Liên kết nông dân-doanh nghiệp lỏng lẻo khiến giá sầu riêng giảm sâu trong vụ thu hoạch tháng 5-6, một số khu vực còn ghi nhận nguy cơ nhiễm cadimi.",
+    direction:"negative", key_metric:"33.000ha, vượt quy hoạch 2030",
+    sources:[{name:"VTV",url:"https://vtv.vn/vo-quy-hoach-vung-nguyen-lieu-sau-rieng-100260629100938693.htm"}] },
+  { id:5, rank:5, scores:{revenue:1,cost:2,scope:2,duration:5}, category:"Chính Sách", category_short:"CHÍNH SÁCH", icon:"🛍️",
+    headline:"Hà Nội cấm túi nhựa dùng một lần tại chợ, cửa hàng tiện lợi từ 2028",
+    summary:"Từ 1/1/2028, Hà Nội sẽ cấm lưu hành sản phẩm nhựa dùng một lần và bao bì nhựa khó phân hủy tại chợ và cửa hàng tiện lợi, nhằm giảm hơn 1.400 tấn chất thải nhựa phát sinh mỗi ngày. Tuy nhiên, rào cản về chi phí sản phẩm thay thế và quán tính sử dụng túi nilon lâu năm của người dân vẫn còn lớn, theo các chuyên gia.",
+    direction:"neutral", key_metric:"Hiệu lực từ 1/1/2028",
+    sources:[{name:"VTV",url:"https://vtv.vn/ha-noi-thay-the-tui-nilon-tu-2028-nhieu-rao-can-de-thay-doi-thoi-quen-100260629205344976.htm"}] },
+];
+
+const DEEP = {
+  1: {
+    detail: [
+      "Theo Trung tâm Dự báo Khí tượng Thủy văn Quốc gia, từ đêm 29/6 đến hết ngày 1/7, khu vực Bắc Bộ và Thanh Hóa trải qua đợt mưa lớn diện rộng với lượng mưa phổ biến 70-150mm, cục bộ tại các tỉnh như Tuyên Quang, Cao Bằng và Thái Nguyên có nơi vượt 300mm. Nguyên nhân là hình thế rãnh áp thấp kết hợp hội tụ gió trên cao hoạt động mạnh trở lại sau nhiều ngày. Lượng mưa tích lũy đã khiến nền đất ở nhiều khu vực miền núi gần đạt trạng thái bão hòa, nâng cao nguy cơ lũ quét và sạt lở đất.",
+      "Mực nước trên một số sông tại Thái Nguyên, Tuyên Quang, Bắc Ninh đang lên, sông Cầu tại trạm Cầu Sơn vượt mức báo động 1. Dự báo từ 29/6 đến 30/6, lũ trên các sông nhỏ và thượng nguồn sông chính khu vực Bắc Bộ dâng 2-4m, một số nơi có thể lên mức báo động 1 đến báo động 2. Ban Chỉ đạo Phòng thủ dân sự Quốc gia đã phát đi văn bản khẩn yêu cầu 6 tỉnh — Phú Thọ, Lào Cai, Tuyên Quang, Thái Nguyên, Cao Bằng và Quảng Ninh — khẩn trương sơ tán dân và ứng phó ngay.",
+      "Yếu tố khuếch đại đáng chú ý là Trung tâm Khí tượng đồng thời cảnh báo khả năng hình thành áp thấp nhiệt đới trên Biển Đông trong tuần 29/6-5/7, có thể tăng cường mưa lớn cho miền Bắc và mở rộng phạm vi ảnh hưởng sang miền Trung. Nếu áp thấp hình thành và mạnh lên thành bão, đây sẽ là tín hiệu thiên tai cần theo dõi sát trong tuần tới cho toàn bộ hoạt động vận hành và logistics của hệ thống.",
+    ],
+    impact: [
+      { area:"Phạm vi ảnh hưởng trực tiếp", dir:"neutral", text:"Saigon Co.op hiện không có điểm bán tại các tỉnh chịu ảnh hưởng nặng nhất như Cao Bằng, Tuyên Quang, Thái Nguyên, do đó không chịu tác động vận hành trực tiếp từ đợt lũ này. Rủi ro logistics chỉ đáng kể nếu các tuyến quốc lộ qua vùng này thuộc hành trình vận chuyển hàng hóa liên vùng của hệ thống." },
+      { area:"Nguồn cung nông sản và thực phẩm tươi", dir:"negative", text:"Mưa lũ diện rộng tại vùng sản xuất nông nghiệp Bắc Bộ có thể gây thiệt hại cho cây trồng và ảnh hưởng đến nguồn cung rau củ quả trong ngắn hạn. Các điểm bán Co.opmart và Co.opFood cần theo dõi sát để kịp thời điều phối nguồn cung từ các vùng khác không bị ảnh hưởng." },
+      { area:"Rủi ro mở rộng từ áp thấp nhiệt đới", dir:"negative", text:"Khả năng hình thành áp thấp nhiệt đới trên Biển Đông là tín hiệu cần theo dõi ưu tiên trong tuần tới. Nếu phát triển thành bão và đổ bộ, phạm vi ảnh hưởng có thể mở rộng tới các tỉnh miền Trung — nơi Saigon Co.op có nhiều điểm bán Co.opmart trọng yếu, và chuỗi cung ứng có thể bị gián đoạn." },
+      { area:"Cơ hội bình ổn thị trường", dir:"positive", text:"Trong giai đoạn thiên tai, hệ thống bán lẻ hiện đại với mạng lưới rộng và khả năng bình ổn giá có vai trò quan trọng trong việc đảm bảo cung ứng hàng thiết yếu. Đây là cơ hội để củng cố hình ảnh thương hiệu dân tộc, gắn bó với cộng đồng tại các vùng bị ảnh hưởng." },
+    ],
+  },
+  2: {
+    detail: [
+      "Từ ngày 1/7/2026, Nghị định 161/2026/NĐ-CP của Chính phủ chính thức có hiệu lực, nâng mức lương cơ sở từ 2.340.000 đồng/tháng lên 2.530.000 đồng/tháng — tăng thêm 190.000 đồng, tương đương 8,1%. Đây là lần điều chỉnh đầu tiên sau 2 năm kể từ tháng 7/2024. Đồng thời, Nghị định 162/2026 quy định lương hưu và trợ cấp bảo hiểm xã hội cũng được điều chỉnh tăng thêm 8% trên mức hưởng tháng 6/2026.",
+      "Quyết định tăng lương cơ sở được thực hiện trên cơ sở mức lương cũ chỉ bằng 56% mức lương tối thiểu vùng bình quân khu vực doanh nghiệp — khoảng cách lớn đã tạo áp lực cải thiện chính sách tiền lương công. Việc điều chỉnh kéo theo hàng loạt chế độ được nâng lên: phụ cấp chức vụ, phụ cấp khu vực, thâm niên, các khoản trợ cấp xã hội. Ước tính có hàng triệu người hưởng lương và trợ cấp được tăng thu nhập từ đầu tháng 7.",
+      "Nhìn rộng hơn, đây là một trong nhiều tín hiệu tích cực cho sức mua nội địa nửa cuối năm 2026, cùng với mục tiêu GDP 11,9% của Chính phủ (Nghị quyết 168/NQ-CP), đẩy mạnh giải ngân đầu tư công và kiểm soát lạm phát. Tuy vậy, Bộ Tài chính đã cảnh báo rằng tăng lương cơ sở sẽ tạo sức ép nhất định lên mặt bằng giá cả nửa cuối năm, đặc biệt khi kết hợp với lộ trình tăng giá dịch vụ y tế và giáo dục được lên kế hoạch từ quý III.",
+    ],
+    impact: [
+      { area:"Sức mua và tiêu dùng nội địa", dir:"positive", text:"Tăng lương cơ sở mang lại thêm thu nhập cho một lượng lớn người tiêu dùng trong khu vực công và người hưởng lương hưu — nhóm khách hàng trung thành của Co.opmart và Co.opFood. Kỳ vọng sức mua cuối tháng 7 tăng nhẹ khi đợt lương mới đầu tiên được chi trả." },
+      { area:"Chi phí nhân sự vận hành", dir:"neutral", text:"Đối với SGC, tác động chi phí trực tiếp phụ thuộc vào tỷ lệ nhân sự thuộc đối tượng áp dụng lương cơ sở. Phần lớn lao động tại điểm bán được trả theo thang lương doanh nghiệp, không bắt buộc điều chỉnh theo lương cơ sở. Tuy nhiên, áp lực nâng lương thị trường để giữ chân lao động chất lượng có thể tăng theo kỳ." },
+      { area:"Rủi ro lạm phát hàng hóa đầu vào", dir:"negative", text:"Tăng lương cơ sở kết hợp lộ trình tăng giá dịch vụ công và ổn định thấp hơn kỳ vọng tạo rủi ro lạm phát chi phí đầu vào trong nửa cuối năm. Biên lợi nhuận các ngành hàng thực phẩm tươi sống và hàng khô cần theo dõi sát khi nhà cung cấp có thể điều chỉnh giá theo." },
+      { area:"Cơ hội chiến dịch kích cầu", dir:"positive", text:"Thời điểm đầu tháng 7 — khi người tiêu dùng nhận mức lương mới — là cửa sổ lý tưởng để triển khai các chương trình khuyến mãi đón đầu sức mua. Phân khúc thực phẩm tươi sống, đồ gia dụng và sản phẩm chăm sóc cá nhân thường hưởng lợi trực tiếp trong các chu kỳ tăng lương." },
+    ],
+  },
+  3: {
+    detail: [
+      "Diện tích trồng sầu riêng tại nhiều tỉnh Đồng bằng sông Cửu Long, điển hình là Đồng Tháp, đã phát triển vượt xa quy hoạch đề ra cho năm 2030. Tại Đồng Tháp, diện tích hiện đã đạt khoảng 33.000ha, vượt mục tiêu quy hoạch 32.000ha cho năm 2030, và vẫn tiếp tục tăng thêm 2.000-2.500ha mỗi năm. Nguyên nhân chính là giá sầu riêng từng lập đỉnh trong các năm trước, khiến nhiều nông dân chuyển đổi đất lúa, đất trồng xoài và mít sang sầu riêng với kỳ vọng lợi nhuận cao.",
+      "Sự phát triển nóng này đi kèm nhiều rủi ro cấu trúc: quy trình canh tác tại nhiều nhà vườn chưa được hướng dẫn đầy đủ, một số khu vực có nguy cơ nhiễm cadimi trong đất ảnh hưởng đến chất lượng trái. Đáng chú ý hơn, hơn một nửa diện tích sầu riêng tại Đồng Tháp chưa được cấp mã số vùng trồng — điều kiện bắt buộc để tham gia chuỗi xuất khẩu chính thức, khiến nhiều nhà vườn phải tự tìm đầu ra qua thương lái trung gian.",
+      "Việc thiếu liên kết trực tiếp giữa vùng trồng và doanh nghiệp thu mua đã bộc lộ rõ trong vụ thu hoạch tháng 5-6 vừa qua, khi giá sầu riêng giảm sâu do thương lái nắm quyền định giá thực tế. Đây là vấn đề mang tính cấu trúc dài hạn của ngành hàng, không phải biến động ngắn hạn, nên rủi ro về chất lượng và độ ổn định nguồn cung có thể còn kéo dài nếu không được tổ chức lại thành chuỗi liên kết chặt chẽ hơn.",
+    ],
+    impact: [
+      { area:"Nguồn cung ngành hàng trái cây tươi", dir:"negative", text:"Việc liên kết chuỗi lỏng lẻo và thiếu mã số vùng trồng đồng bộ có thể khiến nguồn cung sầu riêng cho các điểm bán Co.opmart, Co.opXtra biến động hơn về chất lượng và độ ổn định, đặc biệt trong các vụ thu hoạch cao điểm khi giá thị trường dao động mạnh." },
+      { area:"Rủi ro chất lượng và an toàn thực phẩm", dir:"negative", text:"Nguy cơ nhiễm cadimi tại một số vùng trồng chưa kiểm soát chặt là yếu tố cần lưu ý trong kiểm soát chất lượng đầu vào — hệ thống bán lẻ hiện đại cần ưu tiên làm việc với các vùng trồng đã có mã số và truy xuất nguồn gốc rõ ràng để giảm thiểu rủi ro này." },
+      { area:"Cơ hội đàm phán giá đầu vào", dir:"positive", text:"Giá sầu riêng giảm sâu trong giai đoạn thu hoạch có thể tạo cơ hội thu mua với chi phí thấp hơn cho ngành hàng trái cây, miễn là kiểm soát được chất lượng và nguồn gốc, đồng thời góp phần hỗ trợ đầu ra ổn định hơn cho nông dân so với kênh thương lái truyền thống." },
+      { area:"Định vị nguồn gốc minh bạch", dir:"positive", text:"Trong bối cảnh thị trường nông sản còn nhiều bất ổn về liên kết chuỗi, việc các chuỗi bán lẻ hiện đại như Saigon Co.op xây dựng quan hệ thu mua trực tiếp với vùng trồng có mã số là cơ hội để tạo lợi thế cạnh tranh về uy tín nguồn gốc so với kênh chợ truyền thống." },
+    ],
+  },
+  4: {
+    detail: [
+      "Tổng Bí thư, Chủ tịch nước Tô Lâm và Thủ tướng Lê Minh Hưng đã có các chỉ đạo liên tiếp về phát triển nhà ở thương mại phù hợp khả năng chi trả và nhà ở cho thuê, xác định đây là chủ trương chiến lược và lâu dài đối với thị trường bất động sản Việt Nam. Hà Nội được giao nhiệm vụ đi đầu thí điểm, với 3 dự án nhà ở cho thuê đã khởi công: khu Pháp Vân-Tứ Hiệp (1.176 căn hộ), khu Việt Hưng (1.166 căn hộ, do Vinhomes thi công) và dự án Him Lam Long Biên với khoảng 4.000 căn hộ cho thuê dài hạn trong tổng số 6.000 căn hộ.",
+      "Song song đó, Bộ Xây dựng đã ban hành công điện yêu cầu các địa phương trên toàn quốc bố trí ngân sách, quỹ đất sạch và khởi công ít nhất một dự án nhà ở cho thuê bằng vốn ngân sách ngay trong tháng 6/2026, đồng thời thành lập Quỹ phát triển nhà ở địa phương trong quý 3/2026. Các chuyên gia nhấn mạnh đây là sự dịch chuyển cấu trúc của thị trường bất động sản — từ logic tích lũy tài sản sang khai thác dòng tiền dài hạn, phục vụ nhu cầu ở thực của công nhân, người lao động và cán bộ công chức.",
+      "Đây là chính sách mang tính chiến lược dài hạn (giai đoạn 2026-2030), không phải biến động ngắn hạn có thể ảnh hưởng ngay đến hoạt động bán lẻ. Tác động thực tế đến ngành bán lẻ sẽ chỉ rõ nét khi các khu nhà ở cho thuê quy mô lớn đi vào vận hành và hình thành cộng đồng dân cư mới — một quá trình có thể kéo dài nhiều năm.",
+    ],
+    impact: [
+      { area:"Cơ hội mặt bằng dài hạn", dir:"positive", text:"Các khu nhà ở cho thuê quy mô lớn tại Hà Nội như Pháp Vân-Tứ Hiệp, Việt Hưng khi đi vào vận hành (dự kiến 2026-2028) sẽ hình thành cộng đồng dân cư mới với nhu cầu mua sắm hàng ngày — đây là cơ hội dài hạn để SGC khảo sát mở rộng điểm bán Co.opFood hoặc Co.opSmile gần các khu vực này." },
+      { area:"Tác động ngắn hạn hạn chế", dir:"neutral", text:"Chính sách này mang tính chiến lược dài hạn 2026-2030, chưa tạo tác động trực tiếp đến doanh số hay vận hành ngắn hạn của hệ thống bán lẻ. Cần tiếp tục theo dõi tiến độ triển khai thực tế tại các địa phương trong các quý tiếp theo." },
+      { area:"Thay đổi cấu trúc tiêu dùng đô thị", dir:"neutral", text:"Nếu mô hình nhà ở cho thuê phát triển thành công, nhóm khách hàng thuê nhà dài hạn (công nhân, người lao động trẻ, sinh viên) có thể có thói quen tiêu dùng khác với nhóm sở hữu nhà — thường ưu tiên tiện lợi và giá trị, phù hợp với định vị của Co.opSmile và Cheers hơn là Co.opmart truyền thống." },
+    ],
+  },
+  5: {
+    detail: [
+      "Theo lộ trình của thành phố Hà Nội, từ ngày 1/1/2028, chợ và cửa hàng tiện lợi trên địa bàn sẽ không được lưu hành và sử dụng sản phẩm nhựa dùng một lần cùng bao bì nhựa khó phân hủy. Mục tiêu chính sách là giảm lượng chất thải nhựa phát sinh, hiện ở mức hơn 1.400 tấn mỗi ngày tại thành phố, phần lớn là túi nilon và nhựa dùng một lần từ hoạt động mua sắm hàng ngày.",
+      "Tuy nhiên, các chuyên gia và thực tế thị trường cho thấy việc thay đổi thói quen tiêu dùng đã hình thành lâu năm gặp nhiều rào cản. Cả người bán và người mua vẫn ưu tiên túi nilon nhờ tiện lợi, giá thành thấp và khả năng chứa hàng hóa đa dạng. Các sản phẩm thay thế như túi vải tái sử dụng hiện có giá thành cao hơn do sản xuất thủ công, cùng hạn chế về độ bền và sức chứa so với túi nhựa truyền thống.",
+      "Đây là chính sách có hiệu lực sau gần 18 tháng nữa (1/1/2028), cho thấy còn khoảng thời gian khá dài để các đơn vị bán lẻ chuẩn bị chuyển đổi. Phạm vi áp dụng hiện chỉ giới hạn tại Hà Nội, nhưng theo xu hướng chính sách môi trường gần đây của các đô thị lớn, khả năng nhân rộng ra các thành phố khác trong tương lai là điều cần lưu ý theo dõi.",
+    ],
+    impact: [
+      { area:"Chuẩn bị chuyển đổi bao bì tại Co.opmart, Co.opFood, Co.opSmile", dir:"neutral", text:"Các điểm bán của SGC tại Hà Nội có khoảng 18 tháng để chuẩn bị phương án thay thế túi nilon bằng các giải pháp bao bì thân thiện môi trường, tránh bị động khi chính sách có hiệu lực vào đầu năm 2028." },
+      { area:"Áp lực chi phí bao bì", dir:"negative", text:"Chi phí chuyển đổi sang túi tái sử dụng hoặc vật liệu phân hủy sinh học hiện cao hơn túi nilon truyền thống do quy mô sản xuất còn nhỏ — đây là khoản chi phí vận hành cần tính toán trước khi chính sách áp dụng, đặc biệt với các chuỗi minimart có mật độ giao dịch cao như Co.opFood, Co.opSmile, Cheers." },
+      { area:"Cơ hội định vị tiêu dùng xanh", dir:"positive", text:"Việc chủ động triển khai sớm các giải pháp bao bì thân thiện môi trường trước thời điểm bắt buộc có thể giúp SGC — thương hiệu bán lẻ thuần Việt — xây dựng hình ảnh tiên phong về tiêu dùng xanh, khác biệt so với các đối thủ chưa chuẩn bị kịp." },
+    ],
+  },
+};
+const RISK_TYPES = { logistics:{id:"logistics",severity:"critical"}, demand:{id:"demand",severity:"high"}, supply:{id:"supply",severity:"medium"}, policy:{id:"policy",severity:"low"}, natural_disaster:{id:"natural_disaster",severity:"critical"} };
+const SEV_ORDER = { critical:4, high:3, medium:2, low:1 };
+function classifyRisks(s) {
+  const t = [s.headline, s.summary, s.category].join(" ").toLowerCase();
+  const m = [];
+  if (/logistics|giao hàng|vận chuyển|kho|last.mile/.test(t)) m.push("logistics");
+  if (/nhu cầu|tiêu dùng|hành vi|online|mua sắm|thị phần|demand|tỷ giá|cpi|lạm phát|sức mua|gdp|lương|thu nhập/.test(t)) m.push("demand");
+  if (/nguồn cung|nhà cung cấp|supply|tồn kho|khan hiếm|thiếu hàng|nguyên liệu/.test(t)) m.push("supply");
+  if (/nghị định|chính sách|quy định|pháp lý|thuế|chính phủ|policy|luật|hiệu lực/.test(t)) m.push("policy");
+  if (/thiên tai|lũ|bão|hạn hán|khí hậu|thời tiết|mưa|sạt lở|áp thấp/.test(t)) m.push("natural_disaster");
+  if (!m.length) m.push("demand");
+  return m;
+}
+function getDominantRisk(s) { return classifyRisks(s).reduce((b,id) => SEV_ORDER[RISK_TYPES[id].severity] > SEV_ORDER[RISK_TYPES[b].severity] ? id : b); }
+function calcESS(s) { const sc=s.scores||{}; return Math.round(((sc.revenue||1)*0.35+(sc.cost||1)*0.35+(sc.scope||1)*0.15+(sc.duration||1)*0.15)*20*10)/10; }
+const RISK_BASE = { logistics:{base:76,min:76,max:100}, demand:{base:51,min:51,max:75}, supply:{base:26,min:26,max:50}, policy:{base:1,min:1,max:25}, natural_disaster:{base:76,min:76,max:100} };
+function calcRiskScore(s) { const ess=calcESS(s),cfg=RISK_BASE[getDominantRisk(s)]; return Math.round(Math.min(cfg.max,Math.max(cfg.min,cfg.base+ess*0.24))*10)/10; }
+function getRiskLevel(score) {
+  if (score>=76) return {level:"NGHIÊM TRỌNG",color:"#7f0000",bg:"rgba(127,0,0,0.08)",border:"rgba(127,0,0,0.2)"};
+  if (score>=51) return {level:"CAO",color:"#dc2626",bg:"rgba(220,38,38,0.08)",border:"rgba(220,38,38,0.2)"};
+  if (score>=26) return {level:"TRUNG BÌNH",color:"#d97706",bg:"rgba(217,119,6,0.09)",border:"rgba(217,119,6,0.2)"};
+  return {level:"THẤP",color:"#16a34a",bg:"rgba(22,163,74,0.08)",border:"rgba(22,163,74,0.18)"};
+}
+function calcRRI(signals) {
+  const scores = signals.map(s => calcRiskScore(s));
+  const total = scores.reduce((a,v)=>a+v,0);
+  if (!total) return {index:0,level:getRiskLevel(0)};
+  const tiers=[76,51,26,1];
+  let crit=0;
+  for(const th of tiers){const m=scores.filter(v=>v>=th);if(m.length){crit=m.reduce((a,v)=>a+v,0);break;}}
+  const index=Math.round((crit/total)*100*10)/10;
+  return {index,level:getRiskLevel(index)};
+}
+const DIR_META={negative:{icon:"↓",color:"#dc2626"},positive:{icon:"↑",color:"#16a34a"},neutral:{icon:"→",color:"#8d99ae"}};
+function renderSources(s,cssClass){const srcs=s.sources||(s.source?[{name:s.source,url:s.source_url||null}]:[]);return srcs.map(src=>src.url?`<a class="${cssClass}-link" href="${src.url}" target="_blank" rel="noopener">${src.name} ↗</a>`:`<span class="${cssClass}">${src.name}</span>`).join('<span style="color:rgba(0,0,0,0.25);margin:0 3px">·</span>');}
+const IMPACT_STYLE={negative:{color:"#e63946",bg:"rgba(230,57,70,0.07)",border:"rgba(230,57,70,0.18)",icon:"↓"},positive:{color:"#2a9d8f",bg:"rgba(42,157,143,0.07)",border:"rgba(42,157,143,0.18)",icon:"↑"},neutral:{color:"#8d99ae",bg:"rgba(141,153,174,0.07)",border:"rgba(141,153,174,0.15)",icon:"→"}};
+let selectedId=SIGNALS[0].id;
+function init(){
+  document.getElementById('header-date').textContent=META.date+'  ·  Cập nhật lúc '+META.scanned_at;
+  const n=META.signals_count||SIGNALS.length,totalRaw=META.total_raw_signals||n;
+  const label=SIGNALS.length===0?(META.no_signal_note||"Không có tín hiệu rủi ro đáng kể trong 24h qua"):totalRaw>5?`Top ${n} tín hiệu quan trọng nhất hôm nay`:`${n} tín hiệu quan trọng nhất hôm nay`;
+  document.getElementById('exec-sub').innerHTML=`<span class="exec-sub-main">${label}</span><span class="exec-sub-note">Phân tích chi tiết hiển thị đầy đủ bên dưới</span>`;
+  renderRRI();renderList();renderDeep(selectedId);
+}
+function renderRRI(){const rri=calcRRI(SIGNALS);document.getElementById('rri-score').textContent=rri.index.toFixed(1);document.getElementById('rri-pill').textContent=rri.level.level;document.getElementById('rri-box').style.background=rri.level.color;}
+function buildDeepHTML(s){const d=DEEP[s.id];if(!d)return'';const rs=calcRiskScore(s),rl=getRiskLevel(rs);return`<div class="deep-panel mobile-inline-deep"><div class="deep-id"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap"><span class="mobile-signal-rank" style="color:${rl.color}">#${s.rank}</span><span style="font-size:11px;color:rgba(0,0,0,0.62);font-weight:600">${s.icon} ${s.category_short}</span><span class="severity-pill" style="background:${rl.color};margin-left:auto">${rl.level}</span></div><div class="deep-headline">${s.headline}</div><div class="deep-meta"><span>${renderSources(s,"deep-source")}</span></div></div><div class="deep-body"><div style="padding-top:16px"><div class="section-title-row"><div class="section-bar" style="background:#d4af37"></div><span class="section-title" style="color:#b8860b">THÔNG TIN CHI TIẾT</span></div><div class="detail-paragraphs">${d.detail.map(p=>`<p class="detail-para">${p}</p>`).join('')}</div></div><div class="divider"></div><div><div class="section-title-row"><div class="section-bar" style="background:#f4a261"></div><span class="section-title" style="color:#e07b30">TÁC ĐỘNG ĐẾN SAIGON CO.OP</span></div><div class="impact-items">${d.impact.map(item=>{const st=IMPACT_STYLE[item.dir];return`<div class="impact-item" style="background:${st.bg};border:1px solid ${st.border};border-left:3px solid ${st.color}"><div class="impact-area-row"><span class="impact-icon" style="color:${st.color}">${st.icon}</span><span class="impact-area" style="color:${st.color}">${item.area.toUpperCase()}</span></div><p class="impact-text">${item.text}</p></div>`;}).join('')}</div></div></div></div>`;}
+function renderList(){const list=document.getElementById('signal-list');const rowsHTML=SIGNALS.map(s=>{const rs=calcRiskScore(s),rl=getRiskLevel(rs),d=DIR_META[s.direction];return`<div class="signal-row" data-id="${s.id}" style="border-left-color:${rl.color}"><div class="row-top"><span class="row-rank" style="color:${rl.color}">#${s.rank}</span><span class="row-cat">${s.icon} ${s.category_short}</span><span class="severity-pill" style="background:${rl.color}">${rl.level}</span></div><div class="row-headline">${s.headline}</div><div class="row-summary">${s.summary}</div><div class="row-footer"><span class="row-metric" style="color:${d.color}">${d.icon} ${s.key_metric}</span><span>${renderSources(s,"row-source")}</span></div></div>`;}).join('');list.innerHTML=rowsHTML+`<div class="mobile-deep-section"><div class="mobile-deep-header">PHÂN TÍCH CHI TIẾT</div>${SIGNALS.map(s=>buildDeepHTML(s)).join('')}</div>`;}
+function renderDeep(id){const s=SIGNALS.find(x=>x.id===id);const d=DEEP[id];if(!s||!d)return;const rs=calcRiskScore(s),rl=getRiskLevel(rs);document.getElementById('deep-panel-container').innerHTML=`<div class="deep-panel"><div class="deep-id"><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:800;color:${rl.color}">#${s.rank}</span><span class="deep-category" style="margin-bottom:0">${s.icon} ${s.category}</span><span class="severity-pill" style="background:${rl.color};margin-left:auto">${rl.level}</span></div><div class="deep-headline">${s.headline}</div><div class="deep-meta"><span>${renderSources(s,"deep-source")}</span></div></div><div class="deep-body"><div style="padding-top:20px"><div class="section-title-row"><div class="section-bar" style="background:#d4af37"></div><span class="section-title" style="color:#b8860b">THÔNG TIN CHI TIẾT</span></div><div class="detail-paragraphs">${d.detail.map(p=>`<p class="detail-para">${p}</p>`).join('')}</div></div><div class="divider"></div><div><div class="section-title-row"><div class="section-bar" style="background:#f4a261"></div><span class="section-title" style="color:#e07b30">TÁC ĐỘNG ĐẾN SAIGON CO.OP</span></div><div class="impact-items">${d.impact.map(item=>{const st=IMPACT_STYLE[item.dir];return`<div class="impact-item" style="background:${st.bg};border:1px solid ${st.border};border-left:3px solid ${st.color}"><div class="impact-area-row"><span class="impact-icon" style="color:${st.color}">${st.icon}</span><span class="impact-area" style="color:${st.color}">${item.area.toUpperCase()}</span></div><p class="impact-text">${item.text}</p></div>`;}).join('')}</div></div></div></div>`;}
+init();
+</script>
+</body>
+</html>
