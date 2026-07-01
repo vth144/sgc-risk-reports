@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Báo Cáo Rủi Ro Thị Trường Hàng Ngày</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;600;700;800&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'IBM Plex Sans', sans-serif; background: #f5f5f3; color: #2d2d2d; }
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+  .header { display: flex; align-items: center; gap: 16px; padding: 0 20px; height: 50px; min-height: 50px; border-bottom: 1px solid rgba(0,0,0,0.08); background: #fff; flex-shrink: 0; }
+  .header-title { font-size: 16px; font-weight: 800; letter-spacing: 0.06em; color: #1a1a1a; flex-shrink: 0; }
+  .header-divider { width: 1px; height: 20px; background: rgba(0,0,0,0.1); flex-shrink: 0; }
+  .header-date { font-size: 13px; color: rgba(0,0,0,0.6); white-space: nowrap; }
+  .body { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+  .col-left { display: flex; flex-direction: column; }
+  .rri-box { background: #888; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .rri-label { font-size: 15px; font-weight: 800; letter-spacing: 0.1em; color: rgba(255,255,255,0.95); margin-bottom: 6px; }
+  .rri-score { font-family: 'IBM Plex Mono', monospace; font-size: 44px; font-weight: 900; line-height: 1; color: #fff; }
+  .rri-denom { font-size: 16px; color: rgba(255,255,255,0.6); margin-left: 8px; }
+  .rri-pill { font-size: 15px; font-weight: 800; letter-spacing: 0.06em; color: #fff; border-radius: 5px; padding: 7px 18px; white-space: nowrap; background: rgba(255,255,255,0.2); }
+  .exec-header { padding: 9px 18px; border-bottom: 1px solid rgba(0,0,0,0.07); background: #1a3a6b; flex-shrink: 0; }
+  .exec-label { font-size: 15px; letter-spacing: 0.1em; color: #fff; font-weight: 800; margin-bottom: 5px; }
+  .exec-sub-main { font-size: 14px; font-weight: 700; color: #fff; display: block; margin-bottom: 3px; }
+  .exec-sub-note { font-size: 11px; font-weight: 400; color: rgba(255,255,255,0.6); display: block; }
+  .signal-row { padding: 15px 18px; cursor: default; border-bottom: 2px solid rgba(0,0,0,0.15); border-left: 3px solid transparent; background: #fff; transition: background 0.15s; }
+  .signal-row.active { background: rgba(212,175,55,0.08); border-left-color: #d4af37 !important; }
+  .row-top { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; flex-wrap: wrap; }
+  .row-rank { font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 800; }
+  .row-cat { font-size: 12px; color: rgba(0,0,0,0.65); letter-spacing: 0.05em; font-weight: 600; }
+  .severity-pill { display: inline-block; font-size: 14px; font-weight: 800; letter-spacing: 0.06em; color: #fff; border-radius: 4px; padding: 4px 11px; margin-left: auto; }
+  .row-headline { font-size: 16px; font-weight: 700; line-height: 1.45; margin-bottom: 8px; color: #111; }
+  .row-summary { font-size: 14px; color: rgba(0,0,0,0.78); line-height: 1.65; margin-bottom: 10px; }
+  .row-footer { display: flex; align-items: center; justify-content: space-between; }
+  .row-metric { font-size: 14px; font-weight: 700; }
+  .row-source-link { font-size: 11px; color: #0005CB; text-decoration: none; border-bottom: 1px solid rgba(0,5,203,0.3); transition: border-color 0.15s; }
+  .row-source-link:hover { border-bottom-color: #0005CB; }
+  .deep-source { font-size: 11px; color: rgba(0,0,0,0.4); }
+  .deep-source-link { font-size: 11px; color: #0005CB; text-decoration: none; border-bottom: 1px solid rgba(0,5,203,0.3); }
+  .col-footer { margin-top: auto; padding: 10px 18px; border-top: 1px solid rgba(0,0,0,0.07); font-size: 10px; color: rgba(0,0,0,0.35); }
+  .col-footer strong { color: rgba(0,0,0,0.5); }
+  .col-right { display: none; }
+  .deep-panel { flex: 1; display: flex; flex-direction: column; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .deep-id { padding: 16px 22px 14px; border-bottom: 1px solid rgba(0,0,0,0.07); }
+  .deep-headline { font-size: 16px; font-weight: 800; color: #1a1a1a; line-height: 1.45; margin-bottom: 8px; }
+  .deep-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .deep-body { padding: 0 22px 28px; display: flex; flex-direction: column; gap: 22px; }
+  .section-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .section-bar { width: 2px; height: 14px; border-radius: 1px; flex-shrink: 0; }
+  .section-title { font-size: 14px; font-weight: 800; letter-spacing: 0.08em; }
+  .divider { height: 1px; background: rgba(0,0,0,0.08); }
+  .detail-paragraphs { display: flex; flex-direction: column; gap: 11px; }
+  .detail-para { font-size: 15px; color: rgba(0,0,0,0.78); line-height: 1.75; }
+  .impact-items { display: flex; flex-direction: column; gap: 9px; }
+  .impact-item { border-radius: 0 7px 7px 0; padding: 11px 14px; border-left-width: 3px; border-left-style: solid; }
+  .impact-area-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+  .impact-icon { font-size: 12px; font-weight: 800; }
+  .impact-area { font-size: 13px; font-weight: 800; letter-spacing: 0.06em; }
+  .impact-text { font-size: 15px; color: rgba(0,0,0,0.78); line-height: 1.72; }
+  .mobile-deep-section { background: #f5f5f3; }
+  .mobile-deep-header { padding: 12px 18px 10px; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: #fff; background: #1a3a6b; border-bottom: 1px solid rgba(0,0,0,0.1); }
+  .mobile-inline-deep { border-bottom: 3px solid rgba(0,0,0,0.15); background: #fff; }
+  .mobile-inline-deep .deep-id { padding: 14px 18px 12px; background: #fff; }
+  .mobile-inline-deep .deep-body { padding: 0 18px 20px; }
+  .mobile-signal-rank { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; }
+  .col-footer { border-top: 1px solid rgba(0,0,0,0.07); }
+  @media (max-width: 480px) {
+    .header-title { font-size: 11px; letter-spacing: 0.03em; }
+    .header { height: auto; padding: 10px 14px; flex-wrap: wrap; }
+    .header-divider { display: none; }
+    .deep-body { padding: 0 14px 20px; }
+    .deep-id, .mobile-inline-deep .deep-id { padding: 12px 14px; }
+    .signal-row { padding: 12px 14px; }
+    .rri-box { padding: 12px 14px; }
+    .exec-header { padding: 8px 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="header-title">BÁO CÁO RỦI RO THỊ TRƯỜNG HÀNG NGÀY</div>
+    <div class="header-divider"></div>
+    <div class="header-date" id="header-date"></div>
+  </header>
+  <div class="body">
+    <div class="col-left">
+      <div class="rri-box" id="rri-box">
+        <div>
+          <div class="rri-label">ĐIỂM RỦI RO</div>
+          <div style="display:flex;align-items:baseline">
+            <span class="rri-score" id="rri-score">—</span>
+            <span class="rri-denom">/ 100</span>
+          </div>
+        </div>
+        <span class="rri-pill" id="rri-pill">—</span>
+      </div>
+      <div class="exec-header">
+        <div class="exec-label">NỘI DUNG CHÍNH</div>
+        <div id="exec-sub"></div>
+      </div>
+      <div id="signal-list"></div>
+      <div class="col-footer">
+        <strong>Thực hiện:</strong> Thanh Hải - Hồng Quang (Phòng Tài chính - Kế hoạch)
+      </div>
+    </div>
+    <div class="col-right">
+      <div style="padding:9px 22px 8px;border-bottom:1px solid rgba(0,0,0,0.07);background:#fff;font-size:11px;font-weight:700;color:rgba(0,0,0,0.45);letter-spacing:0.05em;">THÔNG TIN CHI TIẾT &amp; TÁC ĐỘNG</div>
+      <div id="deep-panel-container" style="flex:1;display:flex;flex-direction:column">
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:12px;color:rgba(0,0,0,0.25);">Chọn một tín hiệu để xem phân tích</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const META = {
+  date: "Thứ Tư, 01/07/2026",
+  scanned_at: "08:00 SA",
+  signals_count: null,
+  no_signal_note: null,
+};
+
+const SIGNALS = [
+  { id:3, rank:1, scores:{revenue:1,cost:1,scope:5,duration:5}, category:"Kinh Tế Vĩ Mô", category_short:"VĨ MÔ", icon:"🏭",
+    headline:"Nghị quyết 10-NQ/TW: Thu hút FDI có chiến lược, không bằng mọi giá",
+    summary:"Việt Nam không thu hút đầu tư bằng mọi giá mà phải là quốc gia có chiến lược, sàng lọc và đồng hành với nhà đầu tư chất lượng. Nghị quyết 10-NQ/TW định hướng ưu tiên FDI vào công nghệ cao, kinh tế xanh và đổi mới sáng tạo, tập trung vào nâng cao năng lực nội địa thay vì thu hút đầu tư theo diện rộng.",
+    direction:"positive", key_metric:"Ưu tiên FDI công nghệ cao, kinh tế xanh",
+    sources:[{name:"VTV",url:"https://vtv.vn/thu-hut-fdi-von-co-chien-luoc-khong-bang-moi-gia-10026063018311595.htm"}] },
+  { id:2, rank:2, scores:{revenue:2,cost:3,scope:5,duration:3}, category:"Chính Sách", category_short:"CHÍNH SÁCH", icon:"⛽",
+    headline:"Chính phủ tiếp tục giảm thuế xăng dầu về 0 đến hết tháng 9/2026",
+    summary:"Chính phủ ban hành nghị định kéo dài miễn thuế bảo vệ môi trường, VAT và thuế nhập khẩu ưu đãi đối với xăng dầu thêm 3 tháng, đến hết ngày 30/9/2026. Quy định có hiệu lực từ 1/7/2026, tiếp nối chính sách giảm gánh nặng thuế đã áp dụng trong nửa đầu năm nhằm giữ ổn định mức giá xăng nội địa và hỗ trợ tăng trưởng kinh tế.",
+    direction:"positive", key_metric:"Miễn thuế BVMT + VAT + nhập khẩu ưu đãi đến 30/9",
+    sources:[{name:"VTV",url:"https://vtv.vn/tiep-tuc-giam-thue-xang-dau-ve-0-den-het-thang-9-2026-100260630223250409.htm"}] },
+  { id:1, rank:3, scores:{revenue:2,cost:2,scope:5,duration:5}, category:"Chính Sách", category_short:"CHÍNH SÁCH", icon:"⚖️",
+    headline:"Luật Thương mại điện tử 2025 có hiệu lực từ 1/7, siết chặt quy định bán hàng số",
+    summary:"Từ ngày 1/7/2026, Luật Thương mại điện tử 2025 chính thức có hiệu lực, yêu cầu mọi cá nhân, tổ chức kinh doanh trên các sàn và nền tảng số phải xác thực danh tính và công khai đầy đủ thông tin hàng hóa. Sàn thương mại điện tử phải chủ động rà soát gỡ bỏ sản phẩm vi phạm; người bán vi phạm có thể bị xử phạt hành chính hoặc xử lý hình sự.",
+    direction:"neutral", key_metric:"Hiệu lực từ 1/7/2026 — toàn quốc",
+    sources:[{name:"Soha",url:"https://soha.vn/tu-1-7-tat-ca-nguoi-ban-hang-online-phai-luu-y-quy-dinh-moi-198260628180554349.htm"}] },
+  { id:5, rank:4, scores:{revenue:2,cost:2,scope:5,duration:5}, category:"Chính Sách", category_short:"CHÍNH SÁCH", icon:"🔍",
+    headline:"Hệ thống truy xuất nguồn gốc nông lâm thủy sản quốc gia chính thức vận hành từ 1/7",
+    summary:"Từ 1/7/2026, hệ thống truy xuất nguồn gốc nông lâm thủy sản quốc gia chính thức vận hành, cho phép quét mã QR để tra cứu thông tin nguồn gốc, quy trình sản xuất và chứng nhận chất lượng. Mọi cơ sở sản xuất, kinh doanh nông sản phải đăng ký và cập nhật dữ liệu lên hệ thống theo quy định.",
+    direction:"positive", key_metric:"QR truy xuất nguồn gốc — bắt buộc từ 1/7/2026",
+    sources:[{name:"VTV",url:"https://vtv.vn/tu-hom-nay-chinh-thuc-van-hanh-he-thong-truy-xuat-nguon-goc-nong-san-10026070108280925.htm"}] },
+  { id:4, rank:5, scores:{revenue:1,cost:1,scope:5,duration:5}, category:"Chính Sách", category_short:"CHÍNH SÁCH", icon:"📋",
+    headline:"Từ 1/7, quy định mới về quản lý kinh doanh đa cấp có hiệu lực",
+    summary:"Nghị định về kinh doanh đa cấp chính thức có hiệu lực từ 1/7/2026, siết chặt điều kiện cấp phép, yêu cầu ký quỹ tối thiểu và minh bạch thông tin hoa hồng. Người tham gia được bảo vệ tốt hơn quyền lợi và có quyền trả lại hàng trong vòng 30 ngày không điều kiện.",
+    direction:"positive", key_metric:"Hiệu lực 1/7 — ký quỹ bắt buộc, trả hàng 30 ngày",
+    sources:[{name:"VTV",url:"https://vtv.vn/tu-1-7-quy-dinh-moi-ve-quan-ly-kinh-doanh-da-cap-co-hieu-luc-100260629111634074.htm"}] },
+];
+
+const DEEP = {
+  1: {
+    detail: [
+      "Từ ngày 1/7/2026, Luật Thương mại điện tử 2025 chính thức có hiệu lực, đánh dấu bước thay đổi quan trọng trong khung pháp lý quản lý hoạt động kinh doanh trên môi trường số tại Việt Nam. Theo đó, mọi cá nhân, hộ kinh doanh, doanh nghiệp và tổ chức bán hàng trên sàn thương mại điện tử hoặc mạng xã hội có chức năng giao dịch đều phải hoàn tất xác thực danh tính với đơn vị vận hành nền tảng trước khi được phép giao dịch. Người bán cũng phải công khai đầy đủ thông tin hàng hóa bao gồm chất lượng sản phẩm, nhãn hàng hóa và các thông tin bắt buộc theo quy định.",
+      "Trách nhiệm được mở rộng theo cả hai chiều: người bán có nghĩa vụ chủ động thông báo và phối hợp thu hồi sản phẩm có dấu hiệu vi phạm hoặc gây mất an toàn; trong khi các sàn thương mại điện tử phải chủ động rà soát, kiểm tra và kịp thời gỡ bỏ sản phẩm, gian hàng vi phạm khi phát hiện hoặc nhận phản ánh. Sàn cũng phải công khai tiêu chí hiển thị sản phẩm nếu áp dụng thuật toán ưu tiên. Mức xử phạt có thể lên đến phạt hành chính, buộc gỡ bỏ nội dung, đình chỉ chức năng giao dịch hoặc xử lý hình sự tùy mức độ vi phạm.",
+      "Bối cảnh ra đời của Luật này gắn liền với sự bùng nổ của thương mại điện tử tại Việt Nam những năm gần đây, kèm theo nhiều vấn nạn như hàng giả, hàng kém chất lượng bán qua sàn, hàng không rõ nguồn gốc xuất xứ — đặc biệt tại các danh mục thực phẩm và hàng tiêu dùng thiết yếu. Luật mới được kỳ vọng tạo ra sân chơi minh bạch và công bằng hơn, giúp các nhà bán lẻ chính thống với hệ thống kiểm soát chất lượng bài bản có lợi thế cạnh tranh hơn so với các người bán không chính thức.",
+    ],
+    impact: [
+      { area:"Kênh Co.op Online và thương mại điện tử", dir:"positive", text:"Luật mới siết chặt yêu cầu xác thực và công khai thông tin với người bán trên tất cả sàn — tạo ra môi trường cạnh tranh lành mạnh hơn cho Co.op Online và các kênh bán hàng số của SGC, vốn đã tuân thủ đầy đủ các tiêu chuẩn về nguồn gốc và an toàn thực phẩm." },
+      { area:"Cạnh tranh với kênh không chính thức", dir:"positive", text:"Các người bán thực phẩm không chính thức trên mạng xã hội và sàn thương mại điện tử, vốn là đối thủ cạnh tranh không cân xứng với bán lẻ hiện đại, sẽ phải đối mặt với áp lực tuân thủ pháp lý cao hơn — đây là cơ hội để bán lẻ chính thống như SGC lấy lại ưu thế cạnh tranh về uy tín và minh bạch." },
+      { area:"Nghĩa vụ tuân thủ nội bộ", dir:"neutral", text:"SGC cần rà soát toàn bộ hoạt động bán hàng trên các nền tảng số (Co.op Online, các trang thương mại điện tử) để đảm bảo đáp ứng đầy đủ yêu cầu mới về công khai thông tin hàng hóa và cơ chế thu hồi sản phẩm lỗi theo quy định mới có hiệu lực." },
+      { area:"Cơ hội định vị thương hiệu", dir:"positive", text:"Trong bối cảnh thị trường còn nhiều người bán chưa tuân thủ đầy đủ, việc SGC chủ động truyền thông về tiêu chuẩn minh bạch và an toàn sản phẩm trên kênh số là cơ hội tốt để củng cố niềm tin khách hàng và khác biệt hóa thương hiệu trong giai đoạn pháp lý chuyển đổi." },
+    ],
+  },
+  2: {
+    detail: [
+      "Chính phủ vừa ban hành nghị định kéo dài chính sách giảm thuế xăng dầu thêm 3 tháng, đến hết ngày 30/9/2026. Theo đó, thuế bảo vệ môi trường, thuế giá trị gia tăng (VAT) và thuế nhập khẩu ưu đãi đối với xăng dầu tiếp tục được giữ ở mức 0%, có hiệu lực từ ngày 1/7/2026. Đây là sự tiếp nối chính sách đã được triển khai trong nửa đầu năm, nhằm giữ ổn định mặt bằng giá xăng dầu trong nước trong bối cảnh giá dầu thế giới còn nhiều biến động.",
+      "Quyết định này được đưa ra ngay trong bối cảnh Chính phủ đang triển khai mục tiêu tăng trưởng GDP 11,9% trong 6 tháng cuối năm (theo Nghị quyết 168/NQ-CP), đồng thời kiểm soát lạm phát không vượt mục tiêu 4,5-5,5% cả năm. Miễn giảm thuế xăng dầu là một trong những công cụ tài khóa được sử dụng nhất quán để kéo ghìm chi phí đầu vào và chi phí logistics trong nền kinh tế.",
+      "Chính sách này có hiệu lực trong 3 tháng (7-9/2026) và sẽ cần được xem xét gia hạn hoặc điều chỉnh vào đầu tháng 10. Rủi ro chính là nếu giá dầu thế giới tăng mạnh hoặc áp lực tỷ giá USD gia tăng trong quý III, chi phí nhập khẩu xăng dầu có thể bị đẩy cao dù thuế đã về 0 — tạo áp lực giá mà chính sách hiện tại chưa xử lý được hoàn toàn.",
+    ],
+    impact: [
+      { area:"Chi phí logistics vận hành", dir:"positive", text:"Giá xăng dầu được duy trì ở mức thấp nhờ miễn thuế giúp giảm chi phí vận chuyển hàng hóa đến các điểm bán trên cả nước, đặc biệt có lợi cho chuỗi phân phối rộng của SGC với hàng trăm điểm bán từ Co.opmart đến Co.opFood và Co.opSmile." },
+      { area:"Kiểm soát giá đầu vào", dir:"positive", text:"Chi phí đầu vào logistics và vận chuyển thấp hơn giúp SGC duy trì chiến lược giá cạnh tranh ổn định trong quý III, hỗ trợ vai trò bình ổn thị trường — đặc biệt quan trọng khi lương cơ sở tăng từ 1/7 có thể tạo áp lực tăng giá bán lẻ từ một số nhà cung cấp." },
+      { area:"Hiệu ứng lan tỏa lạm phát", dir:"positive", text:"Xăng dầu là đầu vào quan trọng cho hầu hết chuỗi cung ứng. Giữ giá ổn định giúp kiềm chế lạm phát chi phí đẩy, tạo nền tảng để giá thực phẩm và hàng tiêu dùng thiết yếu — nhóm hàng cốt lõi của SGC — không bị kéo tăng theo trong những tháng còn lại của năm." },
+      { area:"Theo dõi sau tháng 9", dir:"neutral", text:"Chính sách chỉ kéo dài đến hết 30/9. Nếu không được gia hạn hoặc giá dầu thế giới tăng bất ngờ, chi phí logistics có thể phục hồi nhanh vào quý IV — cần theo dõi sát để điều chỉnh kế hoạch giá và logistics kịp thời cho mùa mua sắm cuối năm." },
+    ],
+  },
+  3: {
+    detail: [
+      "Ban Chấp hành Trung ương Đảng vừa ban hành Nghị quyết 10-NQ/TW về chiến lược thu hút đầu tư trực tiếp nước ngoài (FDI) trong giai đoạn mới. Điểm cốt lõi của nghị quyết là thay đổi tư duy từ 'thu hút bằng mọi giá' sang 'thu hút có chọn lọc, có chiến lược' — tập trung vào các nhà đầu tư mang lại giá trị cao thực sự cho nền kinh tế, thay vì chạy theo chỉ tiêu số lượng vốn đăng ký.",
+      "Theo nghị quyết, FDI được ưu tiên vào các lĩnh vực công nghệ cao, kinh tế xanh, đổi mới sáng tạo và các ngành tạo ra giá trị gia tăng cao trong chuỗi cung ứng toàn cầu. Đồng thời, Việt Nam sẽ tập trung nâng cao năng lực hấp thụ của doanh nghiệp nội địa để thực sự chuyển giao công nghệ và tạo ra hiệu ứng lan tỏa, thay vì chỉ là công xưởng gia công giá rẻ. Nghị quyết cũng nhấn mạnh yêu cầu đồng hành, hỗ trợ nhà đầu tư tốt trong dài hạn.",
+      "Trong bối cảnh Việt Nam đang nỗ lực đạt mục tiêu tăng trưởng GDP trên 10% năm 2026, chuyển dịch cơ cấu FDI theo hướng chất lượng cao hơn là tín hiệu tích cực cho triển vọng kinh tế dài hạn — tuy nhiên tác động trực tiếp và ngắn hạn đến tiêu dùng nội địa và bán lẻ sẽ cần thêm thời gian để thể hiện rõ nét.",
+    ],
+    impact: [
+      { area:"Tăng trưởng thu nhập và sức mua dài hạn", dir:"positive", text:"FDI chất lượng cao vào công nghệ và công nghiệp giá trị gia tăng tạo ra việc làm tốt hơn với thu nhập cao hơn cho người lao động — nhóm khách hàng tiềm năng của hệ thống bán lẻ, đặc biệt là Co.opmart và Co.opXtra tại các khu đô thị và khu công nghiệp." },
+      { area:"Cơ hội gần các khu công nghiệp mới", dir:"positive", text:"Định hướng phát triển khu công nghiệp công nghệ cao theo nghị quyết sẽ thu hút lực lượng lao động tri thức đến các địa bàn mới — tạo nhu cầu bán lẻ tại những khu vực mà SGC có thể cân nhắc mở điểm bán Co.opSmile hoặc Co.opFood trong kế hoạch mở rộng trung hạn." },
+      { area:"Áp lực cạnh tranh từ nhà đầu tư nước ngoài trong bán lẻ", dir:"neutral", text:"Chính sách FDI mở hơn với chọn lọc chất lượng cũng có thể thu hút thêm các tập đoàn bán lẻ quốc tế hàng đầu vào thị trường Việt Nam với mô hình và công nghệ vượt trội — đây là yếu tố cần theo dõi khi đánh giá áp lực cạnh tranh dài hạn với Co.opmart, Co.opXtra." },
+      { area:"Tác động ngắn hạn hạn chế", dir:"neutral", text:"Đây là nghị quyết định hướng chiến lược dài hạn, không tạo ra tác động tức thì đến bán lẻ. Hiệu ứng thực tế sẽ chỉ rõ nét sau khi các dự án FDI chất lượng cao đi vào triển khai và tạo ra việc làm cùng thu nhập thực tế cho người lao động." },
+    ],
+  },
+  4: {
+    detail: [
+      "Nghị định mới về kinh doanh theo mạng lưới đa cấp chính thức có hiệu lực từ ngày 1/7/2026, thay thế và siết chặt đáng kể so với khung pháp lý trước đây. Theo quy định mới, doanh nghiệp kinh doanh đa cấp phải đáp ứng điều kiện ký quỹ tối thiểu cao hơn, minh bạch hóa toàn bộ thông tin về cơ cấu hoa hồng và thu nhập thực tế trung bình của người tham gia, đồng thời bị hạn chế trong việc tổ chức các buổi hội thảo, sự kiện có thể gây hiểu nhầm về thu nhập kỳ vọng.",
+      "Về quyền lợi người tham gia, quy định mới trao quyền trả lại hàng hóa trong vòng 30 ngày không điều kiện và được hoàn lại tiền đầy đủ — đây là điểm bảo vệ người tiêu dùng quan trọng nhất trong nghị định này. Trước đây, người tham gia thường khó thoát khỏi hợp đồng hoặc thu hồi lại tiền hàng hóa đã mua khi nhận ra mô hình không phù hợp.",
+      "Bối cảnh ra đời của nghị định này gắn liền với làn sóng kinh doanh đa cấp trực tuyến bùng phát mạnh sau đại dịch và giai đoạn tăng trưởng thương mại điện tử, kéo theo nhiều hệ lụy xã hội. Nhà nước chọn thời điểm đầu tháng 7 — khi nhiều luật và nghị định kinh tế mới đồng loạt có hiệu lực — để ban hành một khung pháp lý toàn diện hơn cho kênh phân phối này.",
+    ],
+    impact: [
+      { area:"Giảm áp lực kênh cạnh tranh phi chính thống", dir:"positive", text:"Siết chặt kinh doanh đa cấp thực phẩm chức năng và hàng tiêu dùng — một kênh cạnh tranh phi chính thống và thiếu minh bạch với bán lẻ chính thống — là tín hiệu tích cực cho hệ thống phân phối hiện đại như Saigon Co.op, vốn phải tuân thủ đầy đủ tiêu chuẩn chất lượng và thuế phí." },
+      { area:"Niềm tin người tiêu dùng với kênh chính thống", dir:"positive", text:"Khi quy định bảo vệ người mua hàng qua mạng lưới được siết chặt, người tiêu dùng có xu hướng ưu tiên kênh bán lẻ chính thống hơn — đây là cơ hội dài hạn để Co.opmart, Co.opFood và Cheers củng cố niềm tin và thị phần với nhóm khách hàng từng bị thu hút bởi kênh đa cấp." },
+      { area:"Tác động trực tiếp đến SGC hạn chế", dir:"neutral", text:"SGC không hoạt động trong lĩnh vực kinh doanh đa cấp, nên không chịu tác động vận hành trực tiếp từ nghị định này. Ảnh hưởng chủ yếu là gián tiếp và dài hạn thông qua thay đổi cấu trúc thị trường phân phối hàng tiêu dùng." },
+    ],
+  },
+  5: {
+    detail: [
+      "Từ ngày 1/7/2026, hệ thống truy xuất nguồn gốc nông lâm thủy sản quốc gia chính thức đi vào vận hành, đánh dấu bước ngoặt quan trọng trong quản lý chuỗi cung ứng thực phẩm tại Việt Nam. Theo đó, người tiêu dùng có thể quét mã QR trên sản phẩm để tra cứu đầy đủ thông tin về vùng trồng, quy trình sản xuất, nhà sản xuất và các chứng nhận chất lượng liên quan. Phía cung ứng, mọi cơ sở sản xuất và kinh doanh nông sản phải đăng ký và cập nhật dữ liệu lên hệ thống theo đúng quy định.",
+      "Hệ thống được triển khai trong bối cảnh Việt Nam đang đẩy mạnh số hóa chuỗi giá trị nông nghiệp, đồng thời đáp ứng yêu cầu ngày càng cao từ các thị trường xuất khẩu lớn như EU, Mỹ, Nhật Bản về truy xuất nguồn gốc và an toàn thực phẩm. Trong nước, áp lực từ người tiêu dùng về minh bạch nguồn gốc thực phẩm cũng gia tăng đáng kể, đặc biệt sau một số sự cố thực phẩm gây mất niềm tin trong những năm gần đây.",
+      "Giai đoạn đầu vận hành dự kiến tập trung vào các mặt hàng nông sản chủ lực có kim ngạch xuất khẩu cao và rủi ro an toàn thực phẩm lớn. Mức độ phủ sóng và chất lượng dữ liệu trong hệ thống sẽ là yếu tố quyết định hiệu quả thực tế, vì kinh nghiệm từ các chương trình truy xuất nguồn gốc trước đây cho thấy dữ liệu đầu vào không đồng đều là thách thức lớn nhất.",
+    ],
+    impact: [
+      { area:"Lợi thế chuỗi cung ứng có kiểm soát", dir:"positive", text:"SGC với hệ thống kiểm soát nhà cung cấp và tiêu chuẩn chất lượng đã được xây dựng từ lâu sẽ có lợi thế thích ứng với yêu cầu truy xuất nguồn gốc nhanh hơn nhiều so với các kênh phân phối truyền thống chưa có hệ thống quản lý nhà cung cấp bài bản." },
+      { area:"Áp lực với nhà cung cấp nhỏ lẻ", dir:"negative", text:"Một số nhà cung cấp rau củ quả, thịt tươi và thủy sản quy mô nhỏ cung cấp cho Co.opmart, Co.opFood có thể gặp khó khăn hoặc tốn chi phí để đăng ký và vận hành hệ thống truy xuất — cần hỗ trợ và có lộ trình chuyển đổi phù hợp để không gây gián đoạn nguồn cung." },
+      { area:"Cơ hội truyền thông nguồn gốc minh bạch", dir:"positive", text:"Tích hợp mã QR truy xuất nguồn gốc vào hàng hóa tại điểm bán là cơ hội để SGC truyền thông mạnh hơn về uy tín nguồn gốc — đặc biệt với nhóm khách hàng quan tâm đến an toàn thực phẩm, vốn là thế mạnh định vị của Co.opmart và Co.opFood so với kênh chợ truyền thống." },
+      { area:"Chi phí vận hành và tuân thủ", dir:"neutral", text:"Việc đảm bảo toàn bộ danh mục nông sản, thực phẩm tươi sống tại các điểm bán đáp ứng yêu cầu dữ liệu truy xuất sẽ tạo thêm khối lượng công việc cho bộ phận quản lý nhà cung cấp và hệ thống quản lý hàng hóa — cần đánh giá mức độ sẵn sàng của đội ngũ và hệ thống IT hiện tại." },
+    ],
+  },
+};
+
+const RISK_TYPES = { logistics:{id:"logistics",severity:"critical"}, demand:{id:"demand",severity:"high"}, supply:{id:"supply",severity:"medium"}, policy:{id:"policy",severity:"low"}, natural_disaster:{id:"natural_disaster",severity:"critical"} };
+const SEV_ORDER = { critical:4, high:3, medium:2, low:1 };
+function classifyRisks(s) {
+  const t = [s.headline, s.summary, s.category].join(" ").toLowerCase();
+  const m = [];
+  if (/logistics|giao hàng|vận chuyển|kho|last.mile/.test(t)) m.push("logistics");
+  if (/nhu cầu|tiêu dùng|hành vi|online|mua sắm|thị phần|demand|tỷ giá|cpi|lạm phát|sức mua|gdp|lương|thu nhập|bất động sản|giá thuê|mặt bằng|lấp đầy/.test(t)) m.push("demand");
+  if (/nguồn cung|nhà cung cấp|supply|tồn kho|khan hiếm|thiếu hàng|nguyên liệu/.test(t)) m.push("supply");
+  if (/nghị định|chính sách|quy định|pháp lý|thuế|chính phủ|policy|luật|hiệu lực|cấm/.test(t)) m.push("policy");
+  if (/thiên tai|lũ|bão|hạn hán|khí hậu|thời tiết|mưa|sạt lở|áp thấp/.test(t)) m.push("natural_disaster");
+  if (!m.length) m.push("demand");
+  return m;
+}
+function getDominantRisk(s) { return classifyRisks(s).reduce((b,id) => SEV_ORDER[RISK_TYPES[id].severity] > SEV_ORDER[RISK_TYPES[b].severity] ? id : b); }
+function calcESS(s) { const sc=s.scores||{}; return Math.round(((sc.revenue||1)*0.35+(sc.cost||1)*0.35+(sc.scope||1)*0.15+(sc.duration||1)*0.15)*20*10)/10; }
+const RISK_BASE = { logistics:{base:76,min:76,max:100}, demand:{base:51,min:51,max:75}, supply:{base:26,min:26,max:50}, policy:{base:1,min:1,max:25}, natural_disaster:{base:76,min:76,max:100} };
+function calcRiskScore(s) { const ess=calcESS(s),cfg=RISK_BASE[getDominantRisk(s)]; return Math.round(Math.min(cfg.max,Math.max(cfg.min,cfg.base+ess*0.24))*10)/10; }
+function getRiskLevel(score) {
+  if (score>=76) return {level:"NGHIÊM TRỌNG",color:"#7f0000",bg:"rgba(127,0,0,0.08)",border:"rgba(127,0,0,0.2)"};
+  if (score>=51) return {level:"CAO",color:"#dc2626",bg:"rgba(220,38,38,0.08)",border:"rgba(220,38,38,0.2)"};
+  if (score>=26) return {level:"TRUNG BÌNH",color:"#d97706",bg:"rgba(217,119,6,0.09)",border:"rgba(217,119,6,0.2)"};
+  return {level:"THẤP",color:"#16a34a",bg:"rgba(22,163,74,0.08)",border:"rgba(22,163,74,0.18)"};
+}
+// RRI override: tất cả cùng 1 tier → avg; 2+ tier → dynamic threshold
+function calcRRI(signals) {
+  if (!signals.length) return {index:0,level:getRiskLevel(0)};
+  const scores = signals.map(s=>calcRiskScore(s));
+  const total = scores.reduce((a,v)=>a+v,0);
+  const tiers = scores.map(v=>v>=76?4:v>=51?3:v>=26?2:1);
+  const allSame = tiers.every(t=>t===tiers[0]);
+  if (allSame) {
+    const index = Math.round((total/scores.length)*10)/10;
+    return {index,level:getRiskLevel(index)};
+  }
+  const thresholds=[76,51,26,1];
+  let crit=0;
+  for(const th of thresholds){const m=scores.filter(v=>v>=th);if(m.length){crit=m.reduce((a,v)=>a+v,0);break;}}
+  const index=Math.round((crit/total)*100*10)/10;
+  return {index,level:getRiskLevel(index)};
+}
+const DIR_META={negative:{icon:"↓",color:"#dc2626"},positive:{icon:"↑",color:"#16a34a"},neutral:{icon:"→",color:"#8d99ae"}};
+function renderSources(s,cssClass){const srcs=s.sources||(s.source?[{name:s.source,url:s.source_url||null}]:[]);return srcs.map(src=>src.url?`<a class="${cssClass}-link" href="${src.url}" target="_blank" rel="noopener">${src.name} ↗</a>`:`<span class="${cssClass}">${src.name}</span>`).join('<span style="color:rgba(0,0,0,0.25);margin:0 3px">·</span>');}
+const IMPACT_STYLE={negative:{color:"#e63946",bg:"rgba(230,57,70,0.07)",border:"rgba(230,57,70,0.18)",icon:"↓"},positive:{color:"#2a9d8f",bg:"rgba(42,157,143,0.07)",border:"rgba(42,157,143,0.18)",icon:"↑"},neutral:{color:"#8d99ae",bg:"rgba(141,153,174,0.07)",border:"rgba(141,153,174,0.15)",icon:"→"}};
+let selectedId=SIGNALS[0].id;
+function init(){
+  document.getElementById('header-date').textContent=META.date+'  ·  Cập nhật lúc '+META.scanned_at;
+  const n=META.signals_count||SIGNALS.length,totalRaw=META.total_raw_signals||n;
+  const label=SIGNALS.length===0?(META.no_signal_note||"Không có tín hiệu rủi ro đáng kể trong 24h qua"):totalRaw>5?`Top ${n} tín hiệu quan trọng nhất hôm nay`:`${n} tín hiệu quan trọng nhất hôm nay`;
+  document.getElementById('exec-sub').innerHTML=`<span class="exec-sub-main">${label}</span><span class="exec-sub-note">Phân tích chi tiết hiển thị đầy đủ bên dưới</span>`;
+  renderRRI();renderList();renderDeep(selectedId);
+}
+function renderRRI(){const rri=calcRRI(SIGNALS);document.getElementById('rri-score').textContent=rri.index.toFixed(1);document.getElementById('rri-pill').textContent=rri.level.level;document.getElementById('rri-box').style.background=rri.level.color;}
+function buildDeepHTML(s){const d=DEEP[s.id];if(!d)return'';const rs=calcRiskScore(s),rl=getRiskLevel(rs);return`<div class="deep-panel mobile-inline-deep"><div class="deep-id"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap"><span class="mobile-signal-rank" style="color:${rl.color}">#${s.rank}</span><span style="font-size:11px;color:rgba(0,0,0,0.62);font-weight:600">${s.icon} ${s.category_short}</span><span class="severity-pill" style="background:${rl.color};margin-left:auto">${rl.level}</span></div><div class="deep-headline">${s.headline}</div><div class="deep-meta"><span>${renderSources(s,"deep-source")}</span></div></div><div class="deep-body"><div style="padding-top:16px"><div class="section-title-row"><div class="section-bar" style="background:#d4af37"></div><span class="section-title" style="color:#b8860b">THÔNG TIN CHI TIẾT</span></div><div class="detail-paragraphs">${d.detail.map(p=>`<p class="detail-para">${p}</p>`).join('')}</div></div><div class="divider"></div><div><div class="section-title-row"><div class="section-bar" style="background:#f4a261"></div><span class="section-title" style="color:#e07b30">TÁC ĐỘNG ĐẾN SAIGON CO.OP</span></div><div class="impact-items">${d.impact.map(item=>{const st=IMPACT_STYLE[item.dir];return`<div class="impact-item" style="background:${st.bg};border:1px solid ${st.border};border-left:3px solid ${st.color}"><div class="impact-area-row"><span class="impact-icon" style="color:${st.color}">${st.icon}</span><span class="impact-area" style="color:${st.color}">${item.area.toUpperCase()}</span></div><p class="impact-text">${item.text}</p></div>`;}).join('')}</div></div></div></div>`;}
+function renderList(){const list=document.getElementById('signal-list');const rowsHTML=SIGNALS.map(s=>{const rs=calcRiskScore(s),rl=getRiskLevel(rs),d=DIR_META[s.direction];return`<div class="signal-row" data-id="${s.id}" style="border-left-color:${rl.color}"><div class="row-top"><span class="row-rank" style="color:${rl.color}">#${s.rank}</span><span class="row-cat">${s.icon} ${s.category_short}</span><span class="severity-pill" style="background:${rl.color}">${rl.level}</span></div><div class="row-headline">${s.headline}</div><div class="row-summary">${s.summary}</div><div class="row-footer"><span class="row-metric" style="color:${d.color}">${d.icon} ${s.key_metric}</span><span>${renderSources(s,"row-source")}</span></div></div>`;}).join('');list.innerHTML=rowsHTML+`<div class="mobile-deep-section"><div class="mobile-deep-header">PHÂN TÍCH CHI TIẾT</div>${SIGNALS.map(s=>buildDeepHTML(s)).join('')}</div>`;}
+function renderDeep(id){const s=SIGNALS.find(x=>x.id===id);const d=DEEP[id];if(!s||!d)return;const rs=calcRiskScore(s),rl=getRiskLevel(rs);document.getElementById('deep-panel-container').innerHTML=`<div class="deep-panel"><div class="deep-id"><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:800;color:${rl.color}">#${s.rank}</span><span style="font-size:11px;color:#b8860b;font-weight:800;letter-spacing:0.1em;margin-bottom:0">${s.icon} ${s.category}</span><span class="severity-pill" style="background:${rl.color};margin-left:auto">${rl.level}</span></div><div class="deep-headline">${s.headline}</div><div class="deep-meta"><span>${renderSources(s,"deep-source")}</span></div></div><div class="deep-body"><div style="padding-top:20px"><div class="section-title-row"><div class="section-bar" style="background:#d4af37"></div><span class="section-title" style="color:#b8860b">THÔNG TIN CHI TIẾT</span></div><div class="detail-paragraphs">${d.detail.map(p=>`<p class="detail-para">${p}</p>`).join('')}</div></div><div class="divider"></div><div><div class="section-title-row"><div class="section-bar" style="background:#f4a261"></div><span class="section-title" style="color:#e07b30">TÁC ĐỘNG ĐẾN SAIGON CO.OP</span></div><div class="impact-items">${d.impact.map(item=>{const st=IMPACT_STYLE[item.dir];return`<div class="impact-item" style="background:${st.bg};border:1px solid ${st.border};border-left:3px solid ${st.color}"><div class="impact-area-row"><span class="impact-icon" style="color:${st.color}">${st.icon}</span><span class="impact-area" style="color:${st.color}">${item.area.toUpperCase()}</span></div><p class="impact-text">${item.text}</p></div>`;}).join('')}</div></div></div></div>`;}
+init();
+</script>
+</body>
+</html>
