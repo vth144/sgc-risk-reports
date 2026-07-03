@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Báo Cáo Rủi Ro Thị Trường Hàng Ngày</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;600;700;800&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'IBM Plex Sans', sans-serif; background: #f5f5f3; color: #2d2d2d; }
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+  .header {
+    display: flex; align-items: center; gap: 16; padding: 0 20px;
+    height: 50px; min-height: 50px; border-bottom: 1px solid rgba(0,0,0,0.08);
+    background: #fff; flex-shrink: 0; gap: 16px;
+  }
+  .header-title { font-size: 16px; font-weight: 800; letter-spacing: 0.06em; color: #1a1a1a; flex-shrink: 0; }
+  .header-divider { width: 1px; height: 20px; background: rgba(0,0,0,0.1); flex-shrink: 0; }
+  .header-date { font-size: 13px; color: rgba(0,0,0,0.6); white-space: nowrap; }
+
+  .body { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+
+  /* LEFT */
+  .col-left { display: flex; flex-direction: column; }
+
+  /* RRI */
+  .rri-box { background: #888; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .rri-label { font-size: 15px; font-weight: 800; letter-spacing: 0.1em; color: rgba(255,255,255,0.95); margin-bottom: 6px; }
+  .rri-score { font-family: 'IBM Plex Mono', monospace; font-size: 44px; font-weight: 900; line-height: 1; color: #fff; }
+  .rri-denom { font-size: 16px; color: rgba(255,255,255,0.6); margin-left: 8px; }
+  .rri-pill { font-size: 15px; font-weight: 800; letter-spacing: 0.06em; color: #fff; border-radius: 5px; padding: 7px 18px; white-space: nowrap; background: rgba(255,255,255,0.2); }
+
+  .exec-header { padding: 9px 18px; border-bottom: 1px solid rgba(0,0,0,0.07); background: #1a3a6b; flex-shrink: 0; }
+  .exec-label { font-size: 15px; letter-spacing: 0.1em; color: #fff; font-weight: 800; margin-bottom: 5px; }
+  .exec-sub-main { font-size: 14px; font-weight: 700; color: #fff; display: block; margin-bottom: 3px; }
+  .exec-sub-note { font-size: 11px; font-weight: 400; color: rgba(255,255,255,0.6); display: block; }
+
+  /* SIGNAL ROW */
+  .signal-row {
+    padding: 15px 18px; cursor: default;
+    border-bottom: 2px solid rgba(0,0,0,0.15);
+    border-left: 3px solid transparent;
+    background: #fff; transition: background 0.15s;
+  }
+  .signal-row:hover { background: #fff; }
+  .signal-row.active { background: rgba(212,175,55,0.08); border-left-color: #d4af37 !important; }
+  .row-top { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; flex-wrap: wrap; }
+  .row-rank { font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 800; }
+  .row-cat { font-size: 12px; color: rgba(0,0,0,0.65); letter-spacing: 0.05em; font-weight: 600; }
+  .row-active-hint { margin-left: auto; font-size: 11px; color: #b8860b; }
+  .severity-pill { display: inline-block; font-size: 14px; font-weight: 800; letter-spacing: 0.06em; color: #fff; border-radius: 4px; padding: 4px 11px; margin-left: auto; }
+  .row-headline { font-size: 16px; font-weight: 700; line-height: 1.45; margin-bottom: 8px; color: #111; }
+  .row-headline.active { color: #000; }
+  .row-summary { font-size: 14px; color: rgba(0,0,0,0.78); line-height: 1.65; margin-bottom: 10px; }
+  .row-footer { display: flex; align-items: center; justify-content: space-between; }
+  .row-metric { font-size: 14px; font-weight: 700; }
+  .row-source { font-size: 12px; color: rgba(0,0,0,0.4); }
+  .row-source-link {
+    font-size: 11px; color: #0005CB; text-decoration: none;
+    border-bottom: 1px solid rgba(0,5,203,0.3);
+    transition: border-color 0.15s;
+  }
+  .row-source-link:hover { border-bottom-color: #0005CB; }
+  .deep-source { font-size: 11px; color: rgba(0,0,0,0.4); }
+  .deep-source-link {
+    font-size: 11px; color: #0005CB; text-decoration: none;
+    border-bottom: 1px solid rgba(0,5,203,0.3);
+    transition: border-color 0.15s;
+  }
+  .deep-source-link:hover { border-bottom-color: #0005CB; }
+
+  /* FOOTER */
+  .col-footer { margin-top: auto; padding: 10px 18px; border-top: 1px solid rgba(0,0,0,0.07); font-size: 10px; color: rgba(0,0,0,0.35); }
+  .col-footer strong { color: rgba(0,0,0,0.5); }
+
+  /* RIGHT */
+  .col-right { display: none; }
+  .right-header { padding: 9px 22px 8px; border-bottom: 1px solid rgba(0,0,0,0.07); background: #fff; flex-shrink: 0; font-size: 11px; font-weight: 700; color: rgba(0,0,0,0.45); letter-spacing: 0.05em; }
+  .right-empty { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; color: rgba(0,0,0,0.25); }
+
+  /* DEEP PANEL */
+  .deep-panel { flex: 1; display: flex; flex-direction: column; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .deep-id { padding: 16px 22px 14px; border-bottom: 1px solid rgba(0,0,0,0.07); }
+  .deep-category { font-size: 11px; letter-spacing: 0.1em; color: #b8860b; font-weight: 800; margin-bottom: 7px; }
+  .deep-headline { font-size: 16px; font-weight: 800; color: #1a1a1a; line-height: 1.45; margin-bottom: 8px; }
+  .deep-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .deep-source { font-size: 11px; color: rgba(0,0,0,0.4); }
+  .deep-body { padding: 0 22px 28px; display: flex; flex-direction: column; gap: 22px; }
+  .section-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .section-bar { width: 2px; height: 14px; border-radius: 1px; flex-shrink: 0; }
+  .section-title { font-size: 14px; font-weight: 800; letter-spacing: 0.08em; }
+  .divider { height: 1px; background: rgba(0,0,0,0.08); }
+  .detail-paragraphs { display: flex; flex-direction: column; gap: 11px; }
+  .detail-para { font-size: 15px; color: rgba(0,0,0,0.78); line-height: 1.75; }
+  .impact-items { display: flex; flex-direction: column; gap: 9px; }
+  .impact-item { border-radius: 0 7px 7px 0; padding: 11px 14px; border-left-width: 3px; border-left-style: solid; }
+  .impact-area-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+  .impact-icon { font-size: 12px; font-weight: 800; }
+  .impact-area { font-size: 13px; font-weight: 800; letter-spacing: 0.06em; }
+  .impact-text { font-size: 15px; color: rgba(0,0,0,0.78); line-height: 1.72; }
+
+  /* ── MOBILE RESPONSIVE ── */
+  /* Deep section — always shown */
+  .mobile-deep-section { background: #f5f5f3; }
+  .mobile-deep-header {
+    padding: 12px 18px 10px;
+    font-size: 12px; font-weight: 800; letter-spacing: 0.1em;
+    color: #fff; background: #1a3a6b;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+  }
+  .mobile-inline-deep {
+    border-bottom: 3px solid rgba(0,0,0,0.15);
+    background: #fff;
+  }
+  .mobile-inline-deep .deep-id { padding: 14px 18px 12px; background: #fff; }
+  .mobile-inline-deep .deep-body { padding: 0 18px 20px; }
+  .mobile-signal-rank {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; font-weight: 800;
+    letter-spacing: 0.06em;
+  }
+  .col-footer { border-top: 1px solid rgba(0,0,0,0.07); }
+  @media (max-width: 480px) {
+    .header-title { font-size: 11px; letter-spacing: 0.03em; }
+    .header { height: auto; padding: 10px 14px; flex-wrap: wrap; }
+    .header-divider { display: none; }
+    .deep-body { padding: 0 14px 20px; }
+    .deep-id, .mobile-inline-deep .deep-id { padding: 12px 14px; }
+    .signal-row { padding: 12px 14px; }
+    .rri-box { padding: 12px 14px; }
+    .exec-header { padding: 8px 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-title">BÁO CÁO RỦI RO THỊ TRƯỜNG HÀNG NGÀY</div>
+    <div class="header-divider"></div>
+    <div class="header-date" id="header-date"></div>
+  </header>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- LEFT -->
+    <div class="col-left">
+      <!-- RRI -->
+      <div class="rri-box" id="rri-box">
+        <div>
+          <div class="rri-label">ĐIỂM RỦI RO</div>
+          <div style="display:flex;align-items:baseline">
+            <span class="rri-score" id="rri-score">—</span>
+            <span class="rri-denom">/ 100</span>
+          </div>
+        </div>
+        <span class="rri-pill" id="rri-pill">—</span>
+      </div>
+
+      <!-- EXECUTIVE SUMMARY -->
+      <div class="exec-header">
+        <div class="exec-label">NỘI DUNG CHÍNH</div>
+        <div id="exec-sub"></div>
+      </div>
+
+      <!-- SIGNAL LIST -->
+      <div id="signal-list"></div>
+
+      <!-- FOOTER -->
+      <div class="col-footer">
+        <strong>Thực hiện:</strong> Thanh Hải và Hồng Quang (Phòng Tài chính - Kế hoạch)
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col-right">
+      <div class="right-header">THÔNG TIN CHI TIẾT &amp; TÁC ĐỘNG — Nhấn vào tín hiệu bên trái để xem</div>
+      <div id="deep-panel-container" style="flex:1;display:flex;flex-direction:column">
+        <div class="right-empty">Chọn một tín hiệu để xem phân tích</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+const META = {
+  date: "Thứ Sáu, 03/07/2026",
+  scanned_at: "16:00",
+  signals_count: null, // null = dùng SIGNALS.length, set số nếu ít hơn 5
+  no_signal_note: null, // ghi chú khi không có tín hiệu
+  total_raw_signals: 4,
+};
+
+const SIGNALS = [
+  { id:1, rank:1, scores:{revenue:3,cost:3,scope:4,duration:2}, category:"Thiên tai & Khí hậu", category_short:"THIÊN TAI", icon:"🌀",
+    headline:"Bão số 1 Maysak hình thành trên Biển Đông, Nam Bộ mưa to đến rất to",
+    summary:"Áp thấp nhiệt đới đã mạnh lên thành bão số 1 — cơn bão đầu tiên trên Biển Đông năm 2026, dự báo hướng vào vịnh Bắc Bộ. Đông Bắc Bộ và Thanh Hóa mưa 30-70mm từ chiều tối 3/7, có nơi trên 120mm và mưa duy trì nhiều ngày. Nam Bộ và TP.HCM mưa to đến rất to từ trưa chiều do gió tây nam mạnh lên, đề phòng ngập vùng trũng thấp.",
+    direction:"negative", key_metric:"Mưa cục bộ trên 120mm từ chiều tối 3/7", sources:[{name:"Tuổi Trẻ",url:"https://tuoitre.vn/thoi-tiet-hom-nay-3-7-bao-tren-bien-dong-nam-bo-co-noi-mua-rat-to-100260702165113904.htm"}] },
+  { id:2, rank:2, scores:{revenue:2,cost:3,scope:4,duration:2}, category:"Giá hàng hóa", category_short:"GIÁ CẢ", icon:"⛽",
+    headline:"Giá xăng dầu đồng loạt giảm mạnh từ chiều 2/7, xăng E5 về 19.730 đồng/lít",
+    summary:"Liên Bộ Công Thương - Tài chính điều chỉnh giảm giá bán lẻ xăng dầu từ chiều 2/7: E5 RON92 giảm 1.055 đồng/lít, E10 RON95-III giảm 788 đồng/lít về 20.415 đồng/lít, dầu diesel giảm 690 đồng/lít về 21.176 đồng/lít. Đây là lần điều chỉnh thứ hai chỉ trong một tuần, trực tiếp hạ chi phí vận chuyển hàng hóa.",
+    direction:"positive", key_metric:"-1.055 đ/lít xăng E5 RON92", sources:[{name:"CafeF",url:"https://cafef.vn/gia-xang-dau-dong-loat-giam-tu-chieu-nay-2-7-188260702192559493.chn"}] },
+  { id:3, rank:3, scores:{revenue:3,cost:2,scope:4,duration:4}, category:"Kinh tế vĩ mô", category_short:"VĨ MÔ", icon:"🌐",
+    headline:"GDP 6 tháng tăng 8,18%, CPI bình quân tăng 4,38% sát mục tiêu cả năm",
+    summary:"Cục Thống kê công bố sáng 3/7: GDP quý II tăng 8,39%, đưa GDP 6 tháng đầu năm lên 8,18%, cao hơn mức 7,63% cùng kỳ 2025. Quy mô tiêu dùng nội địa 6 tháng đạt gần 3,9 triệu tỷ đồng, tăng 12,9%, cho thấy sức mua tiếp tục cải thiện. CPI bình quân 6 tháng tăng 4,38%, lạm phát cơ bản tăng 4,12%.",
+    direction:"neutral", key_metric:"GDP H1 +8,18% · CPI +4,38%", sources:[{name:"CafeF",url:"https://cafef.vn/tang-truong-gdp-viet-nam-dat-hon-8-trong-6-thang-dau-nam-2026-188260703092513223.chn"},{name:"VTV",url:"https://vtv.vn/gdp-quy-ii-tang-839-100260703095314467.htm"}] },
+  { id:4, rank:4, scores:{revenue:2,cost:3,scope:3,duration:2}, category:"Chuỗi cung ứng", category_short:"CUNG ỨNG", icon:"🐖",
+    headline:"Giá heo hơi đi ngang cả ba miền, bình quân 63.200 đồng/kg thấp nhất từ đầu năm",
+    summary:"Thị trường heo hơi tạm ngừng đà giảm, thương lái thu mua 60.000-66.000 đồng/kg trên cả ba miền; TP.HCM và Đồng Nai ở mức 62.000 đồng/kg. Nguồn cung tại phía Nam vẫn dồi dào khiến giá neo ở vùng thấp nhất cả nước. Bình quân toàn quốc 63.200 đồng/kg — mức thấp nhất từ đầu năm đến nay.",
+    direction:"positive", key_metric:"63.200 đ/kg — thấp nhất 2026", sources:[{name:"Thanh Niên",url:"https://thanhnien.vn/gia-heo-hoi-hom-nay-372026-tam-ngung-da-giam-185260703085004615.htm"}] },
+];
+
+const DEEP = {
+  1: {
+    detail: [
+      "Trung tâm Dự báo khí tượng thủy văn quốc gia cho biết áp thấp nhiệt đới trên Biển Đông đã mạnh lên thành bão, gây sóng gió dữ dội trên biển, nguy hiểm cho tàu thuyền hoạt động. Trên đất liền, từ chiều tối 3/7 do ảnh hưởng bão tới gần, khu vực Đông Bắc Bộ và Thanh Hóa mưa vừa, mưa to và dông với lượng mưa phổ biến 30-70mm, có nơi mưa rất to trên 120mm; mưa dự kiến duy trì nhiều ngày tới tại Bắc Bộ.",
+      "Ở phía Nam, dù tâm bão hướng về vịnh Bắc Bộ, gió tây nam được kích hoạt mạnh khiến Nam Bộ mưa tăng cả về diện và lượng: ngày mưa rào, từ trưa chiều đến tối mưa rào nhiều nơi, có nơi mưa to đến rất to. TP.HCM nền nhiệt 25-33 độ C, chiều và đêm có nơi mưa to đến rất to, kèm nguy cơ lốc, sét, gió giật mạnh và ngập tại các khu vực trũng thấp.",
+      "Đây là cơn bão mở màn mùa mưa bão trên Biển Đông năm nay, xuất hiện ngay đầu tháng 7 — thời điểm các chuỗi bán lẻ bước vào chu kỳ kinh doanh nửa cuối năm. Diễn biến mưa kéo dài nhiều ngày ở phía Bắc là yếu tố khuếch đại rủi ro đối với vùng trồng rau màu và hoạt động lưu thông hàng hóa liên vùng, trong khi mưa lớn chiều tối tại Nam Bộ trùng khung giờ mua sắm cao điểm của kênh bán lẻ hiện đại.",
+    ],
+    impact: [
+      { area:"Vận hành điểm bán phía Bắc", dir:"negative", text:"Mạng lưới Co.opmart phủ rộng toàn quốc nên các siêu thị tại Đông Bắc Bộ và Thanh Hóa đối mặt nguy cơ gián đoạn vận hành, hư hỏng hạ tầng và sụt giảm lượt khách khi mưa lớn kéo dài nhiều ngày; cần kích hoạt sớm phương án phòng chống bão và kiểm tra an toàn kho hàng tại điểm bán." },
+      { area:"Chuỗi cung ứng & logistics liên vùng", dir:"negative", text:"Mưa lớn diện rộng làm tăng rủi ro chậm trễ trong lưu thông hàng hóa từ các vùng cung ứng phía Bắc về hệ thống phân phối, tạo áp lực lên hệ thống logistics nội bộ của Saigon Co.op; ngành hàng rau củ quả tươi dễ biến động cả về nguồn hàng lẫn chất lượng trong giai đoạn mưa bão." },
+      { area:"Kênh online & giao hàng tại TP.HCM", dir:"negative", text:"Mưa to đến rất to vào chiều tối kèm ngập cục bộ ảnh hưởng trực tiếp năng lực giao hàng của Co.op Online — vốn đang là điểm nghẽn trải nghiệm của hệ thống — đặc biệt ở các khung giờ cao điểm, khuếch đại nguy cơ khách hàng chuyển sang nền tảng giao nhanh của đối thủ." },
+      { area:"Nhu cầu dự trữ thực phẩm", dir:"positive", text:"Thời tiết xấu thường kích thích nhu cầu mua thực phẩm khô, hàng thiết yếu và dự trữ ngắn hạn; Co.opmart và Co.opFood có thể tận dụng vai trò bình ổn giá cùng uy tín nguồn gốc hàng hóa để giữ chân và thu hút khách trong giai đoạn mưa bão." },
+    ],
+  },
+  2: {
+    detail: [
+      "Chiều 2/7, liên Bộ Công Thương - Tài chính điều hành giá xăng dầu theo chu kỳ với mức giảm đồng loạt: xăng E5 RON92 giảm 1.055 đồng/lít về mức trần 19.730 đồng/lít; xăng E10 RON95-III giảm 788 đồng/lít về 20.415 đồng/lít; dầu diesel giảm 690 đồng/lít về 21.176 đồng/lít; dầu mazut giảm 977 đồng/kg về 14.053 đồng/kg. Cơ quan điều hành trích lập quỹ bình ổn 200 đồng/lít với xăng sinh học và dầu diesel, 400 đồng/kg với dầu mazut, đồng thời quyết định chưa chi sử dụng quỹ.",
+      "Đáng chú ý, đây là lần điều chỉnh thứ hai chỉ trong một tuần: tối muộn 1/7, giá xăng E5 RON92 từng được điều chỉnh tăng 1.426 đồng/lít lên 20.785 đồng/lít do thuế tiêu thụ đặc biệt với xăng được thu trở lại từ 1/7 (xăng khoáng 10%, E5 8%, E10 7%). Việc giá đảo chiều giảm nhanh đến từ Nghị quyết ngày 30/6 của Chính phủ cho phép kéo dài ưu đãi thuế nhập khẩu, thuế bảo vệ môi trường và thuế giá trị gia tăng với xăng dầu thêm 3 tháng, đến hết ngày 30/9.",
+      "Trên thị trường thế giới, kỳ điều hành này chịu tác động đan xen: đàm phán Mỹ - Iran có tín hiệu tích cực, OPEC+ có khả năng nâng sản lượng khai thác từ tháng 8, trong khi xung đột Nga - Ukraine vẫn tiếp diễn. Giá xăng RON95 thành phẩm bình quân giữa hai kỳ điều hành giảm hơn 4,3 USD/thùng. Với bảng giá mới, giá xăng dầu của Việt Nam đang thấp hơn các nước có chung đường biên giới.",
+    ],
+    impact: [
+      { area:"Chi phí logistics nội bộ", dir:"positive", text:"Hệ thống kho bãi và vận tải nội bộ phục vụ toàn chuỗi của Saigon Co.op hưởng lợi trực tiếp từ giá dầu diesel giảm, giúp hạ áp lực chi phí phân phối hàng hóa — yếu tố quan trọng trong bối cảnh biên lợi nhuận gộp của các chuỗi đều đang thấp hơn kỳ vọng." },
+      { area:"Giá vốn & mặt bằng giá đầu vào", dir:"positive", text:"Chi phí nhiên liệu hạ sẽ dần thấm vào cơ cấu giá thành của các nhà cung cấp, tạo dư địa để bộ phận thu mua đàm phán giá đầu vào tốt hơn cho các ngành hàng FMCG và tươi sống trong các kỳ điều chỉnh giá sắp tới." },
+      { area:"Tâm lý & sức mua khách hàng", dir:"positive", text:"Giá xăng hạ nhiệt hỗ trợ thu nhập khả dụng của nhóm khách hàng gia đình đại trà — tệp khách chủ lực của Co.opmart và Co.opFood — góp phần củng cố sức mua hàng thiết yếu trong nửa cuối năm." },
+      { area:"Rủi ro biến động chính sách thuế", dir:"neutral", text:"Việc giá tăng mạnh rồi giảm sâu chỉ trong một tuần cho thấy giá xăng dầu đang rất nhạy với các quyết định về thuế; cần theo dõi mốc 30/9 khi ưu đãi thuế hết hạn để chủ động kịch bản chi phí logistics và giá đầu vào cho quý IV." },
+    ],
+  },
+  3: {
+    detail: [
+      "Sáng 3/7, Cục Thống kê (Bộ Tài chính) công bố báo cáo tình hình kinh tế - xã hội quý II và 6 tháng đầu năm 2026. GDP quý II ước tăng 8,39% so với cùng kỳ; tính chung 6 tháng, GDP tăng 8,18%, cao hơn mức 7,63% của cùng kỳ năm 2025. Khu vực dịch vụ 6 tháng tăng 8,09%, trong đó ngành bán buôn và bán lẻ tăng 9,67% — một trong những ngành đóng góp lớn nhất vào mức tăng chung; tiêu dùng cuối cùng tăng 8,15% so với cùng kỳ.",
+      "Tổng mức bán lẻ hàng hóa và doanh thu dịch vụ tiêu dùng 6 tháng ước đạt gần 3,9 triệu tỷ đồng, tăng 12,9% so với cùng kỳ — cho thấy sức mua của nền kinh tế tiếp tục được cải thiện. Chỉ số sản xuất công nghiệp 6 tháng tăng 10,8%, mức cao nhất kể từ năm 2019. Tuy nhiên, cán cân thương mại hàng hóa nhập siêu 16,65 tỷ USD trong 6 tháng đầu năm.",
+      "Về mặt bằng giá, CPI bình quân quý II tăng 5,25% so với cùng kỳ; bình quân 6 tháng đầu năm, CPI tăng 4,38% và lạm phát cơ bản tăng 4,12%. Lạm phát bình quân đang ở vùng cao là biến số cần theo dõi chặt trong nửa cuối năm, khi tăng trưởng mạnh và nhập siêu lớn có thể cộng hưởng tạo áp lực lên chi phí đầu vào và tỷ giá.",
+    ],
+    impact: [
+      { area:"Sức cầu bán lẻ nội địa", dir:"positive", text:"Tổng mức bán lẻ tăng trưởng hai chữ số xác nhận môi trường cầu tiêu dùng thuận lợi; Co.opmart với tệp khách gia đình đại trà và mạng lưới phủ rộng toàn quốc đang ở vị thế hấp thụ trực tiếp đà phục hồi sức mua, đặc biệt ở nhóm hàng thiết yếu vốn là thế mạnh của hệ thống." },
+      { area:"Áp lực chi phí & định giá", dir:"negative", text:"CPI bình quân 6 tháng ở vùng cao đồng nghĩa chi phí đầu vào và kỳ vọng giá của nhà cung cấp chưa hạ nhiệt; áp lực nén biên lợi nhuận tiếp diễn khi cạnh tranh giá gay gắt với WinMart và Bách Hóa Xanh hạn chế khả năng chuyển chi phí sang giá bán lẻ." },
+      { area:"Vai trò bình ổn giá", dir:"positive", text:"Môi trường lạm phát cao là bối cảnh thuận lợi để Saigon Co.op phát huy vai trò bình ổn giá vốn được nhà nước hỗ trợ — điểm khác biệt thương hiệu so với các đối thủ, đồng thời củng cố niềm tin của tệp khách hàng thành viên trung thành quy mô lớn." },
+      { area:"Rủi ro vĩ mô cần theo dõi", dir:"neutral", text:"Nhập siêu lớn có thể tạo áp lực lên tỷ giá, ảnh hưởng giá vốn nhóm hàng nhập khẩu và một phần danh mục hàng nhãn riêng có nguyên liệu đầu vào nhập khẩu; nên đưa biến số tỷ giá vào kế hoạch thu mua và cơ cấu ngành hàng nửa cuối năm." },
+    ],
+  },
+  4: {
+    detail: [
+      "Giá heo hơi ngày 3/7 duy trì trạng thái ổn định trên cả ba miền sau chuỗi phiên giảm liên tục, dao động 60.000-66.000 đồng/kg. Miền Bắc giữ mặt bằng cao nhất cả nước với 66.000 đồng/kg tại nhiều tỉnh như Cao Bằng, Thái Nguyên, Quảng Ninh, Hải Phòng; miền Trung - Tây Nguyên thu mua trong vùng 61.000-65.000 đồng/kg; phía Nam thấp nhất cả nước, TP.HCM và Đồng Nai ở mức 62.000 đồng/kg, trong khi Đồng Tháp và Cà Mau chỉ 60.000 đồng/kg.",
+      "Bình quân cả nước hiện ở mức 63.200 đồng/kg — thấp nhất kể từ đầu năm đến nay. Việc thị trường ngừng lao dốc và đi ngang đồng loạt cho thấy giá đang dò vùng cân bằng mới, trong bối cảnh giá thịt heo có chiều hướng giảm trong giai đoạn mùa hè khi tiêu thụ chậm hơn các mùa cao điểm.",
+      "Đối với bán lẻ tạp hóa, thịt heo là ngành hàng tươi sống chủ lực về lưu lượng khách và tần suất mua. Mặt bằng giá đầu vào thấp kéo dài là điều kiện thuận lợi cho chi phí giá vốn, song cũng tiềm ẩn rủi ro trung hạn: giá neo ở vùng thấp lâu có thể khiến người chăn nuôi thận trọng trong tái đàn, ảnh hưởng đến sự dồi dào của nguồn cung vào giai đoạn cao điểm tiêu thụ cuối năm và Tết.",
+    ],
+    impact: [
+      { area:"Giá vốn ngành hàng tươi sống", dir:"positive", text:"Giá heo hơi ở vùng thấp nhất năm giúp Co.opmart và Co.opFood cải thiện biên lợi nhuận ngành thịt tươi hoặc tạo dư địa giảm giá bán để kéo lưu lượng khách — đòn bẩy quan trọng khi biên lợi nhuận gộp toàn hệ thống đang chịu áp lực." },
+      { area:"Cạnh tranh giá trực diện", dir:"neutral", text:"Các đối thủ như WinMart và Bách Hóa Xanh cũng hưởng cùng mặt bằng giá đầu vào và có thể dùng thịt heo làm mặt hàng kéo khách; Saigon Co.op cần chủ động chương trình giá ngành thịt tươi, tận dụng lợi thế sản xuất nội bộ từ đơn vị sản xuất Xuân Hồng và hệ thống logistics riêng để giữ vị thế giá." },
+      { area:"Rủi ro nguồn cung cuối năm", dir:"neutral", text:"Giá thấp kéo dài làm tăng khả năng người chăn nuôi thu hẹp tái đàn; bộ phận thu mua nên theo dõi sát tín hiệu đảo chiều của thị trường để chủ động chốt hợp đồng thu mua sớm cho mùa cao điểm cuối năm và Tết, tránh bị động khi giá phục hồi." },
+    ],
+  },
+};
+
+// ─── ENGINE ───────────────────────────────────────────────────────────────────
+const RISK_TYPES = {
+  logistics:        { id:"logistics",        severity:"critical" },
+  demand:           { id:"demand",           severity:"high"     },
+  supply:           { id:"supply",           severity:"medium"   },
+  policy:           { id:"policy",           severity:"low"      },
+  natural_disaster: { id:"natural_disaster", severity:"critical" },
+};
+const SEV_ORDER = { critical:4, high:3, medium:2, low:1 };
+
+function classifyRisks(s) {
+  const t = [s.headline, s.summary, s.category].join(" ").toLowerCase();
+  const m = [];
+  if (/logistics|giao hàng|vận chuyển|kho|last.mile/.test(t)) m.push("logistics");
+  if (/nhu cầu|tiêu dùng|hành vi|online|mua sắm|bỏ giỏ|thị phần|demand|bất động sản|giá thuê|mặt bằng|lấp đầy|tỷ giá|cpi|lạm phát|sức mua|gdp/.test(t)) m.push("demand");
+  if (/nguồn cung|nhà cung cấp|supply|tồn kho|khan hiếm|thiếu hàng|nguyên liệu/.test(t)) m.push("supply");
+  if (/nghị định|chính sách|quy định|pháp lý|thuế|chính phủ|policy|luật|hiệu lực/.test(t)) m.push("policy");
+  if (/dịch|bệnh|asf|thiên tai|lũ|bão|hạn hán|khí hậu|thời tiết/.test(t)) m.push("natural_disaster");
+  if (!m.length) m.push("demand");
+  return m;
+}
+function getDominantRisk(s) {
+  return classifyRisks(s).reduce((b, id) => SEV_ORDER[RISK_TYPES[id].severity] > SEV_ORDER[RISK_TYPES[b].severity] ? id : b);
+}
+function calcESS(s) {
+  const sc = s.scores || {};
+  const raw = ((sc.revenue||1)*0.35)+((sc.cost||1)*0.35)+((sc.scope||1)*0.15)+((sc.duration||1)*0.15);
+  return Math.round(raw*20*10)/10;
+}
+const RISK_BASE = { logistics:{base:76,min:76,max:100}, demand:{base:51,min:51,max:75}, supply:{base:26,min:26,max:50}, policy:{base:1,min:1,max:25}, natural_disaster:{base:76,min:76,max:100} };
+function calcRiskScore(s) {
+  const ess = calcESS(s), cfg = RISK_BASE[getDominantRisk(s)];
+  return Math.round(Math.min(cfg.max, Math.max(cfg.min, cfg.base + ess*0.24))*10)/10;
+}
+function getRiskLevel(score) {
+  if (score >= 76) return { level:"NGHIÊM TRỌNG", color:"#7f0000", bg:"rgba(127,0,0,0.08)", border:"rgba(127,0,0,0.2)" };
+  if (score >= 51) return { level:"CAO",          color:"#dc2626", bg:"rgba(220,38,38,0.08)",  border:"rgba(220,38,38,0.2)"  };
+  if (score >= 26) return { level:"TRUNG BÌNH",   color:"#d97706", bg:"rgba(217,119,6,0.09)",  border:"rgba(217,119,6,0.2)"  };
+  return               { level:"THẤP",         color:"#16a34a", bg:"rgba(22,163,74,0.08)",  border:"rgba(22,163,74,0.18)" };
+}
+function calcRRI(signals) {
+  // Quy tắc tính RRI (ghi đè mặc định): ngưỡng động theo tier
+  const scores = signals.map(s => calcRiskScore(s));
+  const total = scores.reduce((a,b) => a+b, 0);
+  if (!total) return { index:0, level:getRiskLevel(0) };
+  const tierOf = sc => sc >= 76 ? 4 : sc >= 51 ? 3 : sc >= 26 ? 2 : 1;
+  const tiers = new Set(scores.map(tierOf));
+  let index;
+  if (tiers.size === 1) {
+    // Tất cả tín hiệu cùng một tier: RRI = trung bình cộng Risk Score
+    index = total / scores.length;
+  } else {
+    // Trải trên 2+ tier: dùng ngưỡng động 76 → 51 → 26 → 1
+    let crit = 0;
+    for (const th of [76, 51, 26, 1]) {
+      const q = scores.filter(sc => sc >= th);
+      if (q.length) { crit = q.reduce((a,b) => a+b, 0); break; }
+    }
+    index = (crit / total) * 100;
+  }
+  index = Math.round(index*10)/10;
+  return { index, level: getRiskLevel(index) };
+}
+const DIR_META = { negative:{icon:"↓",color:"#dc2626"}, positive:{icon:"↑",color:"#16a34a"}, neutral:{icon:"→",color:"#8d99ae"} };
+
+function renderSources(s, cssClass) {
+  const srcs = s.sources || (s.source ? [{name: s.source, url: s.source_url||null}] : []);
+  return srcs.map(src =>
+    src.url
+      ? `<a class="${cssClass}-link" href="${src.url}" target="_blank" rel="noopener">${src.name} ↗</a>`
+      : `<span class="${cssClass}">${src.name}</span>`
+  ).join('<span style="color:rgba(0,0,0,0.25);margin:0 3px">·</span>');
+}
+const IMPACT_STYLE = {
+  negative:{ color:"#e63946", bg:"rgba(230,57,70,0.07)",    border:"rgba(230,57,70,0.18)",    icon:"↓" },
+  positive:{ color:"#2a9d8f", bg:"rgba(42,157,143,0.07)",   border:"rgba(42,157,143,0.18)",   icon:"↑" },
+  neutral: { color:"#8d99ae", bg:"rgba(141,153,174,0.07)",  border:"rgba(141,153,174,0.15)",  icon:"→" },
+};
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+let selectedId = SIGNALS[0].id;
+
+function init() {
+  document.getElementById('header-date').textContent = META.date + '  ·  Cập nhật lúc ' + META.scanned_at;
+  const isMobile = true; // always single-column layout
+  const note = isMobile
+    ? 'Phân tích chi tiết hiển thị đầy đủ bên dưới'
+    : 'Nhấn vào tín hiệu để xem phân tích chiến lược';
+  document.getElementById('exec-sub').innerHTML =
+    (() => {
+      const n = META.signals_count || SIGNALS.length;
+      const totalRaw = META.total_raw_signals || n;
+      const label = SIGNALS.length === 0
+        ? (META.no_signal_note || "Không có tín hiệu rủi ro đáng kể trong 24h qua")
+        : totalRaw > 5
+          ? `Top ${n} tín hiệu quan trọng nhất hôm nay`
+          : `${n} tín hiệu quan trọng nhất hôm nay`;
+      return `<span class="exec-sub-main">${label}</span>`;
+    })() +
+    `<span class="exec-sub-note">${note}</span>`;
+  renderRRI();
+  renderList();
+  renderDeep(selectedId);
+}
+
+function renderRRI() {
+  const rri = calcRRI(SIGNALS);
+  const box = document.getElementById('rri-box');
+  document.getElementById('rri-score').textContent = rri.index.toFixed(1);
+  document.getElementById('rri-score').style.color = '#fff';
+  const pill = document.getElementById('rri-pill');
+  pill.textContent = rri.level.level;
+  pill.style.background = 'rgba(255,255,255,0.2)';
+  pill.style.color = '#fff';
+  document.getElementById('rri-box').style.background = rri.level.color;
+}
+
+function buildDeepHTML(s) {
+  const d = DEEP[s.id];
+  if (!d) return '';
+  const rs = calcRiskScore(s), rl = getRiskLevel(rs);
+  return `
+  <div class="deep-panel mobile-inline-deep">
+    <div class="deep-id">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+        <span class="mobile-signal-rank" style="color:${rl.color}">#${s.rank}</span>
+        <span style="font-size:11px;color:rgba(0,0,0,0.62);font-weight:600">${s.icon} ${s.category_short}</span>
+        <span class="severity-pill" style="background:${rl.color};margin-left:auto">${rl.level}</span>
+      </div>
+      <div class="deep-headline">${s.headline}</div>
+      <div class="deep-meta">
+        <span class="deep-sources">${renderSources(s,"deep-source")}</span>
+      </div>
+    </div>
+    <div class="deep-body">
+      <div style="padding-top:16px">
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#d4af37"></div>
+          <span class="section-title" style="color:#b8860b">THÔNG TIN CHI TIẾT</span>
+        </div>
+        <div class="detail-paragraphs">${d.detail.map(p=>`<p class="detail-para">${p}</p>`).join('')}</div>
+      </div>
+      <div class="divider"></div>
+      <div>
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#f4a261"></div>
+          <span class="section-title" style="color:#e07b30">TÁC ĐỘNG ĐẾN SAIGON CO.OP</span>
+        </div>
+        <div class="impact-items">
+          ${d.impact.map(item => {
+            const st = IMPACT_STYLE[item.dir];
+            return `<div class="impact-item" style="background:${st.bg};border:1px solid ${st.border};border-left:3px solid ${st.color}">
+              <div class="impact-area-row">
+                <span class="impact-icon" style="color:${st.color}">${st.icon}</span>
+                <span class="impact-area" style="color:${st.color}">${item.area.toUpperCase()}</span>
+              </div>
+              <p class="impact-text">${item.text}</p>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderList() {
+  const isMobile = true; // always single-column layout
+  const list = document.getElementById('signal-list');
+
+  // Signal rows (all devices)
+  const rowsHTML = SIGNALS.map(s => {
+    const rs = calcRiskScore(s), rl = getRiskLevel(rs), d = DIR_META[s.direction];
+    const isActive = s.id === selectedId && !isMobile;
+    return `
+    <div class="signal-row${isActive?' active':''}" data-id="${s.id}" style="border-left-color:${isActive?'#d4af37':rl.color}">
+      <div class="row-top">
+        <span class="row-rank" style="color:${rl.color}">#${s.rank}</span>
+        <span class="row-cat">${s.icon} ${s.category_short}</span>
+        <span class="severity-pill" style="background:${rl.color}">${rl.level}</span>
+        ${isActive?`<span class="row-active-hint" style="margin-left:8px">›› phân tích sâu</span>`:''}
+      </div>
+      <div class="row-headline${isActive?' active':''}">${s.headline}</div>
+      <div class="row-summary">${s.summary}</div>
+      <div class="row-footer">
+        <span class="row-metric" style="color:${d.color}">${d.icon} ${s.key_metric}</span>
+        <span class="row-sources">${renderSources(s,"row-source")}</span>
+      </div>
+      <div class="impact-bar-wrap" style="display:none"></div>
+    </div>`;
+  }).join('');
+
+  // Mobile: append "PHÂN TÍCH CHI TIẾT" section after all rows
+  let mobileDeepHTML = '';
+  if (isMobile) {
+    mobileDeepHTML = `
+    <div class="mobile-deep-section">
+      <div class="mobile-deep-header">PHÂN TÍCH CHI TIẾT</div>
+      ${SIGNALS.map(s => buildDeepHTML(s)).join('')}
+    </div>`;
+  }
+
+  list.innerHTML = rowsHTML + mobileDeepHTML;
+
+
+}
+
+function renderDeep(id) {
+  const s = SIGNALS.find(x => x.id === id);
+  const d = DEEP[id];
+  if (!s || !d) return;
+  const rs = calcRiskScore(s), rl = getRiskLevel(rs);
+  const container = document.getElementById('deep-panel-container');
+  container.innerHTML = `
+  <div class="deep-panel">
+    <div class="deep-id">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:800;color:${rl.color}">#${s.rank}</span>
+        <span class="deep-category" style="margin-bottom:0">${s.icon} ${s.category}</span>
+        <span class="severity-pill" style="background:${rl.color};margin-left:auto">${rl.level}</span>
+      </div>
+      <div class="deep-headline">${s.headline}</div>
+      <div class="deep-meta">
+        <span class="deep-sources">${renderSources(s,"deep-source")}</span>
+      </div>
+    </div>
+    <div class="deep-body">
+      <div style="padding-top:20px">
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#d4af37"></div>
+          <span class="section-title" style="color:#b8860b">THÔNG TIN CHI TIẾT</span>
+        </div>
+        <div class="detail-paragraphs">${d.detail.map(p=>`<p class="detail-para">${p}</p>`).join('')}</div>
+      </div>
+      <div class="divider"></div>
+      <div>
+        <div class="section-title-row">
+          <div class="section-bar" style="background:#f4a261"></div>
+          <span class="section-title" style="color:#e07b30">TÁC ĐỘNG ĐẾN SAIGON CO.OP</span>
+        </div>
+        <div class="impact-items">
+          ${d.impact.map(item => {
+            const st = IMPACT_STYLE[item.dir];
+            return `<div class="impact-item" style="background:${st.bg};border:1px solid ${st.border};border-left:3px solid ${st.color}">
+              <div class="impact-area-row">
+                <span class="impact-icon" style="color:${st.color}">${st.icon}</span>
+                <span class="impact-area" style="color:${st.color}">${item.area.toUpperCase()}</span>
+              </div>
+              <p class="impact-text">${item.text}</p>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+init();
+</script>
+</body>
+</html>
